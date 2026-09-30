@@ -27,8 +27,8 @@ the same place.
 
 ## Make room when the identifiers are taken
 
-The module's numbers are tranches 87 and 88 of the repository's register,
-`ID_RANGES.md`. When something else on the server uses one of them, the
+The module's numbers are tranches 87 and 88 of the WoW-mods register,
+[`ID_RANGES.md`](https://github.com/Adrestie/WoW-mods/blob/main/ID_RANGES.md). When something else on the server uses one of them, the
 installer lists each one and installs nothing: the numbers of one of the two
 have to change. The rule inside a family never changes: card N stays item
 base + N.

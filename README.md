@@ -25,12 +25,12 @@ of twelve. **[How to do things with it](docs/HOWTO.md).**
 | [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) | 3.3.5a, built with the module in `modules/` |
 | [ALE](https://github.com/azerothcore/mod-ale) or Eluna | the Lua engine that will run the interface |
 | [AIO](https://github.com/Rochet2/AIO) | server AND client -- the interface is sent over it |
-| the WoW-mods installer | `installer.exe`, from the `installer/` folder of this repository; MySQL running |
+| the WoW-mods installer | `installer.exe`, from the [WoW-mods-installer releases](https://github.com/Adrestie/WoW-mods-installer/releases); MySQL running |
 
 ## Installing
 
 Stop the world server and close the game, then run `installer.exe`, the
-WoW-mods installer (`installer/` folder of this repository), and give it this
+WoW-mods installer ([WoW-mods-installer releases](https://github.com/Adrestie/WoW-mods-installer/releases)), and give it this
 folder, or drop the folder on `installer.exe`. Its window asks for the world
 server folder and the game folder, finds the rest, shows what it found of the
 module, and offers **Install** or **Remove**. `installer.json` declares
@@ -199,8 +199,8 @@ the catalogue, and `.reload config` first if a setting changed.
 
 Three cards, any of them, become one card drawn at random from the whole
 catalogue, the account's known ones included; three boards become one board.
-This happens at the WORKBENCH, an object shared with the other modules of
-this repository that have recipes (`mod-spheregrid` among them): one object
+This happens at the WORKBENCH, an object shared with the other [WoW-mods](https://github.com/Adrestie/WoW-mods) modules
+that have recipes (`mod-spheregrid` among them): one object
 in the world (810000), one window, and each module's recipes on it. The first
 item placed decides which craft the bench is locked to; taking everything off
 frees it.
@@ -233,8 +233,8 @@ makes them is the author's; the guide gives the formats.
 
 ## The identifiers
 
-One block, 87000 to 88999 (tranches 87 and 88 of the repository's register,
-`ID_RANGES.md`), one number per asset. They are not settings; when a server
+One block, 87000 to 88999 (tranches 87 and 88 of the WoW-mods register,
+[`ID_RANGES.md`](https://github.com/Adrestie/WoW-mods/blob/main/ID_RANGES.md)), one number per asset. They are not settings; when a server
 already uses one of them for something else, the installer says so and
 installs nothing.
 
