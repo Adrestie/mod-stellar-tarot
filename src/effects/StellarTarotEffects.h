@@ -90,6 +90,21 @@ namespace StellarTarotEffects
     // Damage about to be dealt by `attacker` to `victim`: the attacker's
     // scripts see it as dealt, the victim's as taken. Either may be a creature.
     void OnDamage(Unit* attacker, Unit* victim, uint32& damage, bool spell, uint32 school = 1, uint32 spellId = 0);
+    // A WHITE BLOW IS TOLD TWICE. The core calls ModifyMeleeDamage before the
+    // hit roll, once per damage slot of the weapon: the blow is told there for
+    // what changes its damage (BeforeRoll). It reaches Unit::DealDamage only if
+    // it lands -- not when it misses, is dodged, parried or fully blocked -- and
+    // is told there for everything else (Landed). Spells and ticks are told
+    // once, after their own roll (Whole).
+    enum class BlowStage : uint8 { Whole, BeforeRoll, Landed };
+    [[nodiscard]] BlowStage Stage();
+    void OnMeleeBeforeRoll(Unit* attacker, Unit* victim, uint32& damage);
+    // Direct damage about to be dealt (Unit::DealDamage): the white blow told
+    // before its roll lands here, if this is it.
+    void OnDirectDamage(Unit* attacker, Unit* victim, uint32& damage);
+    // The core's exploration, just before it runs: an area whose flag the
+    // character does not carry yet is being discovered.
+    void OnAreaExplore(Player* player);
     void OnHeal(Unit* healer, Unit* receiver, uint32& gain);
     // Le de du coup blanc, des deux cotes : celui qui frappe et celui qui est
     // frappe peuvent l'un et l'autre porter des cartes.

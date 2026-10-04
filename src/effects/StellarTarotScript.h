@@ -99,6 +99,8 @@ public:
     virtual void OnTick(Player* /*player*/) { }                                  // about once a second
     virtual void OnCreatureKill(Player* /*player*/, Creature* /*killed*/) { }
     // Damage the player is about to deal / take. `damage` may be changed.
+    // A white blow comes twice (StellarTarotEffects::Stage): before its roll,
+    // for what changes its damage, then once it lands, for the rest.
     // `school` is the school mask of the blow: 1 physical, 4 fire, and so on.
     // `spellId` is the spell that strikes, 0 for a weapon swing: a condition on
     // the target must be able to tell an aura this very spell keeps up.
@@ -172,6 +174,8 @@ public:
     virtual void OnJump(Player* /*player*/) { }
     virtual void OnResurrect(Player* /*player*/) { }
     virtual void OnZone(Player* /*player*/, uint32 /*zone*/, uint32 /*area*/) { }
+    // The player discovers an area for the first time (the core's exploration).
+    virtual void OnAreaDiscovered(Player* /*player*/, uint32 /*areaId*/) { }
     // Le joueur vient de changer de carte : franchir le seuil d'une instance
     // se lit ici, le coeur n'ayant pas d'evenement plus precis.
     virtual void OnMapChanged(Player* /*player*/) { }

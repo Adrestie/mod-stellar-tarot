@@ -709,11 +709,6 @@ namespace
         }
     }
 
-    // AUTOUR DE L'ADVERSAIRE : la distance a laquelle un autre ennemi le rend
-    // « accompagne ». Dix metres : un camp de monstres tient dedans, un
-    // adversaire ecarte du groupe n'y tient pas.
-    constexpr float SEUL_RAYON = 10.0f;
-
     // The hostile units within `range` of `center`, `except` left out.
     std::list<Unit*> HostilesAround(Player* player, WorldObject* center, float range, Unit* except)
     {
@@ -757,20 +752,45 @@ namespace
         return unit;
     }
 
+    // ALONE: the adversary is the only enemy in combat with the player or his
+    // group -- its own pets and summons count as other enemies. The player's
+    // side is every member of the group on the same map, and what each controls.
     bool UnContreUn(Player* player, Unit* adversaire)
     {
         if (!player || !adversaire)
             return false;
         adversaire = Derriere(adversaire);
-        for (Unit* autre : HostilesAround(player, adversaire, SEUL_RAYON, adversaire))
-            if (!EstUnLeurre(autre))
-                return false;
-        std::list<Unit*> amis;
-        Acore::AnyFriendlyUnitInObjectRangeCheck check(player, player, SEUL_RAYON);
-        Acore::UnitListSearcher<Acore::AnyFriendlyUnitInObjectRangeCheck> searcher(player, amis, check);
-        Cell::VisitObjects(player, searcher, SEUL_RAYON);
-        for (Unit* ami : amis)
-            if (ami && ami != player && !ami->IsTotem())
+        std::vector<Unit*> camp;
+        auto enroler = [&camp](Unit* unit)
+        {
+            camp.push_back(unit);
+            for (Unit* controlled : unit->m_Controlled)
+                if (controlled)
+                    camp.push_back(controlled);
+        };
+        enroler(player);
+        if (Group* const groupe = player->GetGroup())
+            for (GroupReference* it = groupe->GetFirstMember(); it; it = it->next())
+                if (Player* const membre = it->GetSource())
+                    if (membre != player && membre->IsInWorld() && membre->IsInMap(player))
+                        enroler(membre);
+        auto autreEnnemi = [adversaire](Unit* other)
+        {
+            return other && other != adversaire && other->IsAlive() && !EstUnLeurre(other);
+        };
+        for (Unit* unit : camp)
+        {
+            CombatManager const& combat = unit->GetCombatManager();
+            for (auto const& [guid, ref] : combat.GetPvECombatRefs())
+                if (autreEnnemi(ref->GetOther(unit)))
+                    return false;
+            for (auto const& [guid, ref] : combat.GetPvPCombatRefs())
+                if (autreEnnemi(ref->GetOther(unit)))
+                    return false;
+        }
+        // A pet of the adversary not yet in the fight is by its side all the same.
+        for (Unit* controlled : adversaire->m_Controlled)
+            if (autreEnnemi(controlled))
                 return false;
         return true;
     }
@@ -1016,12 +1036,9 @@ namespace
         if (mot == "full_hp") return sujet->GetHealth() >= sujet->GetMaxHealth();
         if (mot == "mana_below") return sujet->GetPowerPct(POWER_MANA) < float(n);
         if (mot == "humanoid") return sujet->GetCreatureType() == CREATURE_TYPE_HUMANOID;
-        // SEUL : L'ADVERSAIRE N'A AUCUN AUTRE ENNEMI AUTOUR DE LUI. Ce n'est
-        // pas « je suis seul a le frapper » : un joueur solo remplissait alors
-        // la condition en permanence, au milieu d'un camp entier (releve en jeu
-        // le 2026-09-20, carte 83). Le sujet est la cible quand on FRAPPE ;
-        // quand on SUBIT, l'adversaire est le vis-a-vis -- le joueur, lui,
-        // n'est jamais « seul » au sens de la carte.
+        // ALONE: the adversary is the only enemy in combat with the player or
+        // his group (UnContreUn). The subject is the target when the player
+        // strikes; when he is struck, the adversary is the one facing him.
         if (mot == "alone")
         {
             Unit* const adversaire = (sujet == player && vis_a_vis) ? vis_a_vis : sujet;
@@ -1396,13 +1413,16 @@ namespace
         {
             int32 const more = n;
             uint32 const sort = markSpell ? markSpell : STELLAR_TAROT_SPELL_TAKEN_MORE;
+            // The stacks survive the recast that renews the figure and the duration.
+            int32 avant = 0;
+            if (Aura const* deja = player->GetAura(sort, player->GetGUID()))
+                avant = int32(deja->GetStackAmount());
             Put(player, player, sort, n2, &more);
             // LA PLAIE QUI S'EMPILE : elle monte d'un cumul par passage,
             // jusqu'au plafond que la ligne lui donne.
             if (stacks > 1)
                 if (Aura* posee = player->GetAura(sort, player->GetGUID()))
-                    if (int32(posee->GetStackAmount()) < stacks)
-                        posee->ModStackAmount(1);
+                    posee->SetStackAmount(uint8(std::min(avant + 1, stacks)));
         }
         // L'ARMURE QUI CEDE, un moment : le revers a sa propre duree, celle
         // que le classeur lui donne, et non celle du bienfait.
@@ -1836,7 +1856,8 @@ namespace
         void OnDamageTaken(Player* player, Unit* /*attacker*/, uint32& /*damage*/, bool /*spell*/,
                            uint32 /*school*/, uint32 /*spellId*/) override
         {
-            if (_state != "running" || !player)
+            if (_state != "running" || !player
+                || StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::BeforeRoll)
                 return;
             _stillSince = 0;
             RemoveOwned(player, _spellId);
@@ -2867,6 +2888,9 @@ namespace
         void OnDamageDealt(Player* player, Unit* victim, uint32& damage, bool spell, uint32 school,
                            uint32 spellId) override
         {
+            // A white blow before its roll may still miss: the line waits for it to land.
+            if (StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::BeforeRoll)
+                return;
             // LE COUP DU REFLET : il vaut la part promise de l'original, et il
             // ne se reflete pas lui-meme.
             if (_mirrorSpell && spellId == _mirrorSpell)
@@ -2979,9 +3003,12 @@ namespace
                 Fire(player, victim, damage);
             }
         }
-        void OnDamageTaken(Player* player, Unit* attacker, uint32& damage, bool spell, uint32 /*school*/,
+        void OnDamageTaken(Player* player, Unit* attacker, uint32& damage, bool spell, uint32 school,
                            uint32 spellId) override
         {
+            // A white blow before its roll may still miss: the line waits for it to land.
+            if (StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::BeforeRoll)
+                return;
             // LE SORT QU'ON VIENT DE SUBIR : « le reflechir » n'a pas d'autre
             // source, le coeur ne le gardant nulle part.
             _sortSubi = (spell && spellId) ? spellId : 0;
@@ -3002,7 +3029,10 @@ namespace
                     Fire(player, attacker, damage);
                 }
             }
-            if (_event == "dmg_taken" || (_event == "dmg_taken_phys" && !spell) || (_event == "dmg_taken_magic" && spell))
+            // Physical or magical by the school of the blow, whatever carries it.
+            bool const physical = !school || (school & SPELL_SCHOOL_MASK_NORMAL);
+            if (_event == "dmg_taken" || (_event == "dmg_taken_phys" && physical)
+                || (_event == "dmg_taken_magic" && !physical))
                 Fire(player, attacker, damage);
             // DANS LE DOS : l'assaillant n'est pas dans le demi-cercle que le
             // joueur a devant lui.
@@ -3218,13 +3248,14 @@ namespace
         }
         void OnLevelUp(Player* player) override { if (_event == "levelup") Fire(player, nullptr, 0); }
         void OnResurrect(Player* /*player*/) override { if (_event == "resurrect") _aRessusciter = true; }
-        void OnZone(Player* player, uint32 zone, uint32 area) override
+        // A zone discovered: an area the character has never been to.
+        void OnAreaDiscovered(Player* player, uint32 /*areaId*/) override
         {
             if (_event == "zone")
-            {
                 Fire(player, nullptr, 0);
-                return;
-            }
+        }
+        void OnZone(Player* player, uint32 zone, uint32 area) override
+        {
             // UNE CAPITALE : le coeur le dit dans la table des zones
             // (AREA_FLAG_CAPITAL). Entrer, c'est n'y avoir pas ete au coup
             // d'avant -- une zone et ses quartiers valent pour une seule.
@@ -3621,6 +3652,23 @@ namespace
             _a = day;
             Pay(player);
         }
+        // Le revers en aura a lui : il monte et tombe avec le bienfait.
+        void LayDebuff(Player* player)
+        {
+            if (!_debuffSpell)
+                return;
+            uint32 const mal = uint32(_debuffSpell);
+            Aura* plaie = player->GetAura(mal, player->GetGUID());
+            if (!plaie)
+                plaie = player->AddAura(mal, player);
+            else if (_b > 1 && plaie->GetStackAmount() < uint8(_b))
+                plaie->ModStackAmount(1);
+            if (plaie && _a)
+            {
+                plaie->SetMaxDuration(_a * 1000);
+                plaie->SetDuration(_a * 1000);
+            }
+        }
         void Do(Player* player, Unit* other, uint32 amount)
         {
             if (_emote)
@@ -3636,7 +3684,10 @@ namespace
                 // UNE PART DES SCORES : meme chemin que la puissance des
                 // sorts, mais score par score.
                 if (_ratingPct && A == "aura" && LayRatingShare(player, _spellId, _ratingParts, _a, _b))
+                {
+                    LayDebuff(player);
                     return;
+                }
                 if (_spPct && A == "aura")
                 {
                     // The stacks survive the recast, one more each time, up to the line's ceiling.
@@ -3675,21 +3726,8 @@ namespace
                     aura->SetMaxDuration(duree * 1000);
                     aura->SetDuration(duree * 1000);
                 }
-                // Le revers en aura a lui : il monte et tombe avec le bienfait.
-                if (_debuffSpell && A == "aura")
-                {
-                    uint32 const mal = uint32(_debuffSpell);
-                    Aura* plaie = player->GetAura(mal, player->GetGUID());
-                    if (!plaie)
-                        plaie = player->AddAura(mal, player);
-                    else if (_b > 1 && plaie->GetStackAmount() < uint8(_b))
-                        plaie->ModStackAmount(1);
-                    if (plaie && _a)
-                    {
-                        plaie->SetMaxDuration(_a * 1000);
-                        plaie->SetDuration(_a * 1000);
-                    }
-                }
+                if (A == "aura")
+                    LayDebuff(player);
                 // CE QUI VIENT APRES. La carte peut etre retiree entre-temps :
                 // la seconde phase se jouera alors jusqu'a son terme, au plus
                 // quelques secondes.
@@ -4615,6 +4653,9 @@ namespace
         void OnDamageDealt(Player* player, Unit* victim, uint32& damage, bool spell, uint32 school,
                            uint32 spellId) override
         {
+            // A white blow is changed before its roll, as the core's own bonuses are.
+            if (StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::Landed)
+                return;
             if (_sense == Sense::Done)
             {
                 if (_school && !(school & uint32(_school)))
@@ -4635,7 +4676,7 @@ namespace
         void OnDamageTaken(Player* player, Unit* attacker, uint32& damage, bool /*spell*/,
                            uint32 school, uint32 /*spellId*/) override
         {
-            if (_sense != Sense::Taken)
+            if (_sense != Sense::Taken || StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::Landed)
                 return;
             if (_school && !(school & uint32(_school)))
                 return;
@@ -5360,7 +5401,7 @@ namespace
         void OnDamageTaken(Player* player, Unit* /*attacker*/, uint32& /*damage*/, bool /*spell*/,
                            uint32 /*school*/, uint32 /*spellId*/) override
         {
-            if (!_moving)
+            if (!_moving || StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::BeforeRoll)
                 return;
             _moving = 0;
             Clear(player);
@@ -5995,7 +6036,7 @@ namespace
 
     // =========================================================================
     // fever:<part>:<part aggravee>:<quatre sorts>:<sort du niveau qui aggrave>:
-    //       <sort du niveau qui accelere>
+    //       <sort du niveau qui accelere>[:rating:<pct>]
     //     LA FIEVRE, UN NIVEAU QUE LES AUTRES MODIFIENT. Tant que le joueur est
     //     EN COMBAT, il porte un debuff a lui qui lui prend cette part de ses PV
     //     max a chaque battement -- une part EXACTE : les sorts portent les
@@ -6026,11 +6067,41 @@ namespace
                 return (error = "expects the spells of the levels that change the fever", false);
             _worse = uint32(aggrave);
             _faster = uint32(accelere);
-            return r.End() || (error = "after the spells, nothing else", false);
+            // rating:<pct>: the level's own boon, a share of the ratings its spell names.
+            if (!r.End())
+            {
+                int32 part = 0;
+                if (r.Word() != "rating" || !r.Int(1, 1000, part))
+                    return (error = "after the spells, only rating:<pct> may follow", false);
+                _share = std::make_unique<RatingPct>();
+                std::string pourquoi;
+                if (!_share->Parse({ std::to_string(part) }, pourquoi))
+                    return (error = "rating: " + pourquoi, false);
+            }
+            return r.End() || (error = "after the rating share, nothing else", false);
         }
-        void Apply(Player* player) override { Hold(player); }
-        void Remove(Player* player) override { Drop(player, 0); }
-        void OnTick(Player* player) override { Hold(player); }
+        [[nodiscard]] bool OwnsAura() const override { return _share != nullptr; }
+        void Apply(Player* player) override
+        {
+            if (_share)
+            {
+                _share->SetSpell(SpellId());
+                _share->Apply(player);
+            }
+            Hold(player);
+        }
+        void Remove(Player* player) override
+        {
+            if (_share)
+                _share->Remove(player);
+            Drop(player, 0);
+        }
+        void OnTick(Player* player) override
+        {
+            if (_share)
+                _share->OnTick(player);
+            Hold(player);
+        }
 
     private:
         void Drop(Player* player, uint32 keep)
@@ -6067,6 +6138,7 @@ namespace
         uint32 _spells[4] = { 0, 0, 0, 0 };   // 0 base, 1 aggravee, 2 rapide, 3 les deux
         uint32 _worse = 0, _faster = 0;
         int32 _pct = 0, _pctMore = 0;
+        std::unique_ptr<RatingPct> _share;     // the level's rating share, when it has one
     };
     // L'objet qui a servi a lancer le sort, quand il y en a un : c'est par lui
     // qu'une fiole se reconnait, le sort seul ne disant pas d'ou il vient.
@@ -6893,7 +6965,8 @@ namespace
         void OnDamageTaken(Player* player, Unit* /*attacker*/, uint32& damage, bool /*spell*/,
                            uint32 school, uint32 /*spellId*/) override
         {
-            if (!player || !damage)
+            // A white blow is shared once it lands, from what it really deals.
+            if (!player || !damage || StellarTarotEffects::Stage() == StellarTarotEffects::BlowStage::BeforeRoll)
                 return;
             Pet* const bete = player->GetPet();
             if (!bete || !bete->IsAlive())
@@ -7192,6 +7265,7 @@ namespace
         void OnJump(Player* player) override { if (StellarTarotScript* s = Courant()) s->OnJump(player); }
         void OnResurrect(Player* player) override { if (StellarTarotScript* s = Courant()) s->OnResurrect(player); }
         void OnZone(Player* player, uint32 zone, uint32 area) override { if (StellarTarotScript* s = Courant()) s->OnZone(player, zone, area); }
+        void OnAreaDiscovered(Player* player, uint32 areaId) override { if (StellarTarotScript* s = Courant()) s->OnAreaDiscovered(player, areaId); }
         void OnMapChanged(Player* player) override { if (StellarTarotScript* s = Courant()) s->OnMapChanged(player); }
         void OnQuestComplete(Player* player, Quest const* quest) override { if (StellarTarotScript* s = Courant()) s->OnQuestComplete(player, quest); }
         void OnLootMoney(Player* player, uint32& copper) override { if (StellarTarotScript* s = Courant()) s->OnLootMoney(player, copper); }
@@ -7473,6 +7547,17 @@ namespace
                 return;
             Acharnement& a = Acharnements()[{ player->GetGUID().GetCounter(), _groupe }];
             ObjectGuid const qui = victim->GetGUID();
+            StellarTarotEffects::BlowStage const stage = StellarTarotEffects::Stage();
+            // Before its roll a white blow only reads the count, which moves once it lands.
+            if (stage == StellarTarotEffects::BlowStage::BeforeRoll)
+            {
+                bool const change = a.cible && a.cible != qui;
+                if (_autres && change && a.cumuls >= std::max(1, _seuil))
+                    damage = uint32(std::max<int64>(0, std::llround(double(damage) * (100 + _autres) / 100.0)));
+                if (_sous && _atteint)
+                    _sous->OnDamageDealt(player, victim, damage, spell, school, spellId);
+                return;
+            }
             uint32 const nowMs = uint32(GameTime::GetGameTimeMS().count());
             // The first level to see this blow moves the count; the others read it.
             if (a.coup != static_cast<void const*>(&damage) || a.coupCible != qui || a.coupQuand != nowMs)
@@ -7488,8 +7573,10 @@ namespace
                 if (a.cumuls < _max)
                     ++a.cumuls;
             }
-            // CE QUE LE JOUEUR INFLIGE AUX AUTRES, tant que le compte tient.
-            if (_autres && a.change && a.avant >= std::max(1, _seuil))
+            // CE QUE LE JOUEUR INFLIGE AUX AUTRES, tant que le compte tient --
+            // a white blow had it before its roll.
+            if (stage != StellarTarotEffects::BlowStage::Landed
+                && _autres && a.change && a.avant >= std::max(1, _seuil))
                 damage = uint32(std::max<int64>(0, std::llround(double(damage) * (100 + _autres) / 100.0)));
             if (a.change && _stun)
                 Put(player, player, STELLAR_TAROT_SPELL_STUN, _stun);
@@ -7529,6 +7616,7 @@ namespace
         void OnJump(Player* player) override { if (StellarTarotScript* s = Courant()) s->OnJump(player); }
         void OnResurrect(Player* player) override { if (StellarTarotScript* s = Courant()) s->OnResurrect(player); }
         void OnZone(Player* player, uint32 zone, uint32 area) override { if (StellarTarotScript* s = Courant()) s->OnZone(player, zone, area); }
+        void OnAreaDiscovered(Player* player, uint32 areaId) override { if (StellarTarotScript* s = Courant()) s->OnAreaDiscovered(player, areaId); }
         void OnMapChanged(Player* player) override { if (StellarTarotScript* s = Courant()) s->OnMapChanged(player); }
         void OnQuestComplete(Player* player, Quest const* quest) override { if (StellarTarotScript* s = Courant()) s->OnQuestComplete(player, quest); }
         void OnLootMoney(Player* player, uint32& copper) override { if (StellarTarotScript* s = Courant()) s->OnLootMoney(player, copper); }
@@ -8609,7 +8697,20 @@ namespace
         void OnDamageDealt(Player* player, Unit* victim, uint32& damage, bool /*spell*/,
                            uint32 school, uint32 /*spellId*/) override
         {
-            if (!_degats || !damage || !player)
+            if (!_degats || !player)
+                return;
+            // A white blow rolls its die before its own roll, and pays the
+            // backlash only once it lands.
+            StellarTarotEffects::BlowStage const stage = StellarTarotEffects::Stage();
+            if (stage == StellarTarotEffects::BlowStage::Landed)
+            {
+                if (_retour)
+                    Bleed(player, _retour, _spellId);
+                _retour = 0;
+                return;
+            }
+            _retour = 0;
+            if (!damage)
                 return;
             // ONE DIE: the high side multiplies, the low side falls.
             int32 const de = int32(urand(1, 100));
@@ -8628,7 +8729,10 @@ namespace
                 uint32 const retour = uint32(std::llround(double(damage) * _part / 100.0));
                 (void)victim;
                 (void)school;
-                Bleed(player, retour, _spellId);
+                if (stage == StellarTarotEffects::BlowStage::BeforeRoll)
+                    _retour = retour;
+                else
+                    Bleed(player, retour, _spellId);
             }
             else
                 damage = 0;
@@ -8667,6 +8771,7 @@ namespace
         bool _degats = false, _soins = false;
         int32 _facteur = 2, _haute = 0, _basse = 0, _part = 0;
         std::string _revers;
+        uint32 _retour = 0;         // the backlash of a white blow, paid if it lands
     };
 
     // =========================================================================
@@ -8716,11 +8821,35 @@ namespace
         int32 _du = 0, _au = 0, _pct = 0;
     };
 
+    // A herb or a vein: its lock asks for herbalism or mining.
+    bool IsGatheringNode(GameObject const* go)
+    {
+        LockEntry const* const lock = sLockStore.LookupEntry(go->GetGOInfo()->GetLockId());
+        if (!lock)
+            return false;
+        for (uint8 i = 0; i < MAX_LOCK_CASE; ++i)
+            if (lock->Type[i] == LOCK_KEY_SKILL
+                && (lock->Index[i] == LOCKTYPE_HERBALISM || lock->Index[i] == LOCKTYPE_MINING))
+                return true;
+        return false;
+    }
+
+    // A world chest: a chest that is neither a herb, a vein, nor a chest a quest
+    // opens or fills (the core's own mark, GameObjectTemplate::IsGameObjectForQuests).
+    // A school of fish is no chest at all.
+    bool IsWorldChest(GameObject const* go)
+    {
+        return go && go->GetGoType() == GAMEOBJECT_TYPE_CHEST && !IsGatheringNode(go)
+            && !go->GetGOInfo()->IsGameObjectForQuests();
+    }
+
     // =========================================================================
     // chest_extra:<n>
     //     UN COFFRE REND DAVANTAGE : sa table est tiree n fois de plus, au
     //     moment meme ou le butin se compose. On ne choisit pas les objets --
-    //     ils viennent de la table du coffre, avec ses propres chances.
+    //     ils viennent de la table du coffre, avec ses propres chances. Un
+    //     coffre du monde seulement : ni plante, ni filon, ni banc de poissons,
+    //     ni coffre de quete.
     // =========================================================================
     class ChestExtra : public StellarTarotScript
     {
@@ -8740,7 +8869,9 @@ namespace
         }
         void OnObjectLoot(Player* player, Loot* loot, LootTemplate const* tab, LootStore const* store) override
         {
-            if (!loot || !tab || !store)
+            if (!player || !loot || !tab || !store)
+                return;
+            if (!IsWorldChest(ObjectAccessor::GetGameObject(*player, loot->sourceWorldObjectGUID)))
                 return;
             uint32 const now = uint32(GameTime::GetGameTime().count());
             bool const arme = StellarTarotEffects::Armed(player);
@@ -8798,7 +8929,7 @@ namespace
             if (_coffre)
             {
                 GameObject const* const go = ObjectAccessor::GetGameObject(*player, loot->sourceWorldObjectGUID);
-                if (!go || go->GetGoType() != GAMEOBJECT_TYPE_CHEST || EstUnNoeud(go))
+                if (!go || go->GetGoType() != GAMEOBJECT_TYPE_CHEST || IsGatheringNode(go))
                     return;
             }
             Ajouter(player, loot);
@@ -8826,19 +8957,6 @@ namespace
             loot->AddItem(LootStoreItem(piece, 0, 100.0f, false, LOOT_MODE_DEFAULT, 0, 1, 1));
             StellarTarotEffects::Probe(player, _spellId, "gear loot +" + std::to_string(piece));
         }
-        // A herb or a vein: its lock asks for herbalism or mining.
-        static bool EstUnNoeud(GameObject const* go)
-        {
-            LockEntry const* const lock = sLockStore.LookupEntry(go->GetGOInfo()->GetLockId());
-            if (!lock)
-                return false;
-            for (uint8 i = 0; i < MAX_LOCK_CASE; ++i)
-                if (lock->Type[i] == LOCK_KEY_SKILL
-                    && (lock->Index[i] == LOCKTYPE_HERBALISM || lock->Index[i] == LOCKTYPE_MINING))
-                    return true;
-            return false;
-        }
-
         int32 _quality = 0, _chance = 100, _icd = 0;
         uint32 _last = 0;
         bool _coffre = false;       // chests only

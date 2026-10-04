@@ -67,6 +67,7 @@
 #include "CellImpl.h"
 #include "CommandScript.h"
 #include "Creature.h"
+#include "DBCStores.h"
 #include "GameObject.h"
 #include "GameTime.h"
 #include "GridNotifiers.h"
@@ -975,8 +976,17 @@ public:
             {
                 Face(player, target);
                 player->EngageWithTarget(target);
-                for (uint32 i = 0; i < std::max<uint32>(1, value); ++i)
+                // A blow lands when the target loses health: a miss, a dodge or a parry leaves it whole.
+                uint32 const count = std::max<uint32>(1, value);
+                uint32 landed = 0;
+                for (uint32 i = 0; i < count; ++i)
+                {
+                    uint32 const before = target->GetHealth();
                     player->AttackerStateUpdate(target, BASE_ATTACK, false, true);
+                    if (target->GetHealth() < before)
+                        ++landed;
+                }
+                result = "landed " + std::to_string(landed) + "/" + std::to_string(count);
             }
         }
         else if (what == "spell")
@@ -1065,9 +1075,17 @@ public:
                 if (what == "struckcrit")
                     striker->AddAura(13847, striker);
                 uint32 const before = player->GetHealth();
-                for (uint32 i = 0; i < std::max<uint32>(1, value); ++i)
+                uint32 const count = std::max<uint32>(1, value);
+                uint32 landed = 0;
+                for (uint32 i = 0; i < count; ++i)
+                {
+                    uint32 const avant = player->GetHealth();
                     striker->AttackerStateUpdate(player, BASE_ATTACK, false, true);
-                result = "health " + std::to_string(before) + " -> " + std::to_string(player->GetHealth());
+                    if (player->GetHealth() < avant)
+                        ++landed;
+                }
+                result = "health " + std::to_string(before) + " -> " + std::to_string(player->GetHealth()) +
+                         ", landed " + std::to_string(landed) + "/" + std::to_string(count);
             }
         }
         // A spell the player takes from a creature.
@@ -1232,8 +1250,16 @@ public:
             else
                 result = "no such quest";
         }
-        else if (what == "zone")
-            StellarTarotEffects::OnZone(player, player->GetZoneId(), player->GetAreaId());
+        // The current area, discovered anew: its explored flag cleared, then
+        // read as the core reads it. zoneknown: read with the flag as it is.
+        else if (what == "zone" || what == "zoneknown")
+        {
+            AreaTableEntry const* const area = sAreaTableStore.LookupEntry(player->GetAreaId());
+            uint32 const offset = area ? area->exploreFlag / 32 : PLAYER_EXPLORED_ZONES_SIZE;
+            if (what == "zone" && offset < PLAYER_EXPLORED_ZONES_SIZE)
+                player->RemoveFlag(PLAYER_EXPLORED_ZONES_1 + offset, 1u << (area->exploreFlag % 32));
+            StellarTarotEffects::OnAreaExplore(player);
+        }
         // Out of a capital, then into Thunder Bluff.
         else if (what == "capital")
         {

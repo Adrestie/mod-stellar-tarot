@@ -27,6 +27,7 @@
 
 #include "AuctionHouseMgr.h"
 #include "Creature.h"
+#include "GameObject.h"
 #include "Item.h"
 #include "LootMgr.h"
 #include "ObjectAccessor.h"
@@ -87,7 +88,8 @@ public:
             PLAYERHOOK_ON_GET_REPUTATION_PRICE_DISCOUNT,
             PLAYERHOOK_ON_MONEY_CHANGED,
             PLAYERHOOK_CAN_PLACE_AUCTION_BID,
-            PLAYERHOOK_CAN_SELL_ITEM
+            PLAYERHOOK_CAN_SELL_ITEM,
+            PLAYERHOOK_CAN_AREA_EXPLORE_AND_OUTDOOR
         }) { }
 
     void OnPlayerLogin(Player* player) override { StellarTarotEffects::OnLogin(player); }
@@ -203,6 +205,12 @@ public:
         StellarTarotEffects::OnSellItem(player, item);
         return true;
     }
+    // The core's exploration is about to run: an area not yet explored is discovered now.
+    bool OnPlayerCanAreaExploreAndOutdoor(Player* player) override
+    {
+        StellarTarotEffects::OnAreaExplore(player);
+        return true;
+    }
 };
 
 namespace
@@ -266,9 +274,18 @@ public:
         StellarTarotEffects::OnFinalDamage(attacker, victim, damage);
     }
 
+    // A white blow, before its hit roll: see StellarTarotEffects::BlowStage.
     void ModifyMeleeDamage(Unit* target, Unit* attacker, uint32& damage) override
     {
-        StellarTarotEffects::OnDamage(attacker, target, damage, false);
+        StellarTarotEffects::OnMeleeBeforeRoll(attacker, target, damage);
+    }
+    // Every damage, at the start of Unit::DealDamage. This hook is not gated by
+    // the list above: the core calls it on every unit script.
+    uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, DamageEffectType type) override
+    {
+        if (type == DIRECT_DAMAGE)
+            StellarTarotEffects::OnDirectDamage(attacker, victim, damage);
+        return damage;
     }
     void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo) override
     {
@@ -356,7 +373,14 @@ public:
             StellarTarotEffects::OnCreatureLoot(lootOwner, loot);
         // Un coffre : la carte peut puiser de nouveau dans SA table.
         else if (&store == &LootTemplates_Gameobject)
-            StellarTarotEffects::OnObjectLoot(lootOwner, loot, tab, &store);
+        {
+            // A school of fish is fished like open water: its catch is a catch.
+            GameObject const* const source = ObjectAccessor::GetGameObject(*lootOwner, loot->sourceWorldObjectGUID);
+            if (source && source->GetGoType() == GAMEOBJECT_TYPE_FISHINGHOLE)
+                StellarTarotEffects::OnFishing(lootOwner, loot, tab, &store);
+            else
+                StellarTarotEffects::OnObjectLoot(lootOwner, loot, tab, &store);
+        }
         // Un minerai prospecte : la table du minerai, la meme, une fois de plus.
         else if (&store == &LootTemplates_Prospecting)
             StellarTarotEffects::OnProspect(lootOwner, loot, tab, &store);

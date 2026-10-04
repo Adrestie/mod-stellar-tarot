@@ -21,6 +21,7 @@
 
 #include "StellarTarotEffects.h"
 #include "Chat.h"
+#include "DBCStores.h"
 #include "Group.h"
 #include "GameTime.h"
 #include "Log.h"
@@ -775,6 +776,9 @@ void StellarTarotEffects::OnDamage(Unit* attacker, Unit* victim, uint32& damage,
         Each(attacker->ToPlayer(), [&](StellarTarotScript& s) { s.OnDamageDealt(attacker->ToPlayer(), victim, damage, spell, school, spellId); });
     if (victim && victim->IsPlayer())
         Each(victim->ToPlayer(), [&](StellarTarotScript& s) { s.OnDamageTaken(victim->ToPlayer(), attacker, damage, spell, school, spellId); });
+    // Before its roll, a white blow is only a figure: nobody reacts to it yet.
+    if (Stage() == BlowStage::BeforeRoll)
+        return;
     // CEUX QUI VEILLENT SUR LUI : le coeur ne previent que le frappe.
     PrevenirLesVeilleurs(victim, damage);
     // LE COUP DU FAMILIER : le coeur ne parle que de la bete ; le module remonte
@@ -783,6 +787,73 @@ void StellarTarotEffects::OnDamage(Unit* attacker, Unit* victim, uint32& damage,
         if (Unit* owner = attacker->GetOwner())
             if (Player* master = owner->ToPlayer())
                 Each(master, [&](StellarTarotScript& s) { s.OnPetDamage(master, victim, damage); });
+}
+
+namespace
+{
+    // Map updates may run on several threads: each keeps its own blow.
+    thread_local StellarTarotEffects::BlowStage tStage = StellarTarotEffects::BlowStage::Whole;
+
+    // The white blow told before its roll, waiting to land in the same update.
+    struct PendingBlow
+    {
+        ObjectGuid attacker, victim;
+        uint64 when = 0;
+    };
+    thread_local PendingBlow tPending;
+
+    // The stage of the blow being told, for the length of one call.
+    struct StageScope
+    {
+        explicit StageScope(StellarTarotEffects::BlowStage stage) : _before(tStage) { tStage = stage; }
+        ~StageScope() { tStage = _before; }
+        StellarTarotEffects::BlowStage _before;
+    };
+}
+
+StellarTarotEffects::BlowStage StellarTarotEffects::Stage()
+{
+    return tStage;
+}
+
+void StellarTarotEffects::OnMeleeBeforeRoll(Unit* attacker, Unit* victim, uint32& damage)
+{
+    // An empty damage slot: the second one of a weapon that has a single school.
+    if (!attacker || !victim || !damage)
+        return;
+    tPending = { attacker->GetGUID(), victim->GetGUID(), uint64(GameTime::GetGameTimeMS().count()) };
+    StageScope scope(BlowStage::BeforeRoll);
+    OnDamage(attacker, victim, damage, false, uint32(attacker->GetMeleeDamageSchoolMask()));
+}
+
+void StellarTarotEffects::OnDirectDamage(Unit* attacker, Unit* victim, uint32& damage)
+{
+    // The blow and its landing happen in the same update (Unit::AttackerStateUpdate).
+    if (!attacker || !victim || tPending.attacker != attacker->GetGUID() || tPending.victim != victim->GetGUID()
+        || tPending.when != uint64(GameTime::GetGameTimeMS().count()))
+        return;
+    // One blow lands once, whatever the number of its damage slots.
+    tPending = {};
+    StageScope scope(BlowStage::Landed);
+    OnDamage(attacker, victim, damage, false, uint32(attacker->GetMeleeDamageSchoolMask()));
+}
+
+void StellarTarotEffects::OnAreaExplore(Player* player)
+{
+    if (!player || Everyone().find(Guid(player)) == Everyone().end())
+        return;
+    // The same reading as Player::CheckAreaExploreAndOutdoor, which sets the flag right after.
+    uint32 const areaId = player->GetAreaId();
+    AreaTableEntry const* const area = areaId ? sAreaTableStore.LookupEntry(areaId) : nullptr;
+    if (!area)
+        return;
+    uint32 const offset = area->exploreFlag / 32;
+    if (offset >= PLAYER_EXPLORED_ZONES_SIZE)
+        return;
+    uint32 const bit = 1u << (area->exploreFlag % 32);
+    if (player->GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset) & bit)
+        return;
+    Each(player, [&](StellarTarotScript& s) { s.OnAreaDiscovered(player, areaId); });
 }
 
 void StellarTarotEffects::OnFinalDamage(Unit* attacker, Unit* victim, uint32& damage)

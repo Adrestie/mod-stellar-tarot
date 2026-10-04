@@ -606,6 +606,55 @@ local LEVELS_LIFT = 6                       -- pixels the block sits above the e
 -- police, une marge et un centrage.
 local LIGNE_RETRAIT, LIGNE_AIR = 14, 4
 
+-- How many screen pixels one interface unit of `frame` covers, from the
+-- resolution and the frame's effective scale. A FRAME: in 3.3.5 a FontString
+-- has no GetEffectiveScale.
+local function PixelsPerUnit(frame)
+    local _, height = string.match(GetCVar("gxResolution") or "", "(%d+)x(%d+)")
+    height = tonumber(height)
+    if not height or height <= 0 then return 1 end
+    return height / 768 * frame:GetEffectiveScale()
+end
+
+-- THE BOLD, WITHOUT TOUCHING THE COLOUR: `base` written again, one screen
+-- pixel further each time, as many times as one interface unit has pixels.
+-- A single copy one unit away leaves a gap where a unit covers two pixels
+-- or more (large screens, interface scale): two texts are read instead of one.
+-- `copies`: the FontStrings of these strokes, grown as needed; `parent`: the
+-- frame that holds `base`.
+local function Embolden(base, copies, parent, template)
+    local ppu = PixelsPerUnit(parent)
+    local strokes = math.max(1, math.floor(ppu + 0.5))
+    for k = 1, strokes do
+        local c = copies[k]
+        if not c then
+            c = parent:CreateFontString(nil, "OVERLAY", template)
+            c:SetShadowOffset(0, 0)
+            copies[k] = c
+        end
+        c:SetFont(base:GetFont())
+        c:SetJustifyH(base:GetJustifyH())
+        -- The same box as the base, whether its height is set or follows its text.
+        c:ClearAllPoints()
+        c:SetPoint("TOPLEFT", base, "TOPLEFT", k / ppu, 0)
+        c:SetPoint("BOTTOMRIGHT", base, "BOTTOMRIGHT", k / ppu, 0)
+        c:SetTextColor(base:GetTextColor())
+        c:SetText(base:GetText() or "")
+        c:Show()
+    end
+    for k = strokes + 1, #copies do
+        copies[k]:SetText("")
+        copies[k]:Hide()
+    end
+end
+
+local function Unbold(copies)
+    for _, c in ipairs(copies or {}) do
+        c:SetText("")
+        c:Hide()
+    end
+end
+
 local function PoserLignes(entrees)
     local ui = S.ui
     local box, child = ui.handLevelsBox, ui.handScrollChild
@@ -630,26 +679,13 @@ local function PoserLignes(entrees)
         fs:SetPoint("TOPLEFT", child, "TOPLEFT", retrait, -haut)
         fs:SetText(e.text or "")
         fs:Show()
-        -- LE GRAS, SANS TOUCHER A LA COULEUR : la meme ligne ecrite une
-        -- seconde fois a un pixel d'ecart. Le contour du client est NOIR et
-        -- salirait l'encre du parchemin.
-        local gras = ui.handBold[i]
+        -- LE GRAS, SANS TOUCHER A LA COULEUR (Embolden). Le contour du client
+        -- est NOIR et salirait l'encre du parchemin.
+        ui.handBold[i] = ui.handBold[i] or {}
         if e.bold then
-            if not gras then
-                gras = child:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-                gras:SetJustifyH("LEFT")
-                gras:SetJustifyV("TOP")
-                gras:SetShadowOffset(0, 0)
-                ui.handBold[i] = gras
-            end
-            gras:SetFont(police, taille, "")
-            gras:SetWidth(box.width - retrait)
-            gras:ClearAllPoints()
-            gras:SetPoint("TOPLEFT", child, "TOPLEFT", retrait + 1, -haut)
-            gras:SetText(e.text or "")
-            gras:Show()
-        elseif gras then
-            gras:Hide()
+            Embolden(fs, ui.handBold[i], child, "GameFontHighlight")
+        else
+            Unbold(ui.handBold[i])
         end
         haut = haut + (fs:GetStringHeight() or 0)
     end
@@ -664,8 +700,7 @@ local function PoserLignes(entrees)
     end
     for i, gras in pairs(ui.handBold) do
         if i > #entrees or not entrees[i].bold then
-            gras:SetText("")
-            gras:Hide()
+            Unbold(gras)
         end
     end
     child:SetHeight(math.max(box.room, haut + 2))
@@ -692,7 +727,7 @@ local function ShowHand(card, act, tint)
         ui.handName:SetTextColor(0.45, 0.4, 0.35)
         for e = 1, 4 do ui.handEdges[e]:SetText("") end
         ui.handMode:SetText("")
-        if ui.handModeBold then ui.handModeBold:SetText("") end
+        Unbold(ui.handModeBold)
         ui.handPairs:SetText("")
         PoserLignes({})
         return
@@ -751,10 +786,7 @@ local function ShowHand(card, act, tint)
     PoserLignes(entrees)
     -- Under them, at the bottom of the box: the one word, when it applies.
     ui.handMode:SetText(card.cumulative and L.cumulative or "")
-    if ui.handModeBold then
-        ui.handModeBold:SetTextColor(ui.handMode:GetTextColor())
-        ui.handModeBold:SetText(ui.handMode:GetText() or "")
-    end
+    Embolden(ui.handMode, ui.handModeBold, ui.hand, "GameFontNormalLarge")
 end
 
 -- What the mouse passes over goes to the hand -- unless a click in the deck
@@ -1705,15 +1737,9 @@ local function BuildHand(ui)
 
     ui.hand, ui.effectsPanel = panel, effectsPanel
     ui.handIcon, ui.handEdges, ui.handName, ui.handState = icon, edges, name, state
-    -- EN GRAS, SANS TOUCHER A LA COULEUR : le mot est ecrit deux fois, a un
-    -- pixel d'ecart. Sa seconde frappe suit son texte (ShowHand).
-    local modeBold = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    modeBold:SetPoint("BOTTOMLEFT", panel, "TOPLEFT", lx + 1, ly - lh + 4)
-    modeBold:SetSize(lw, KIND_H)
-    modeBold:SetJustifyH(mode:GetJustifyH())
-    modeBold:SetShadowOffset(0, 0)
-    modeBold:SetTextColor(mode:GetTextColor())
-    ui.handModeBold = modeBold
+    -- EN GRAS, SANS TOUCHER A LA COULEUR : les frappes du mot suivent son
+    -- texte (ShowHand, Embolden).
+    ui.handModeBold = {}
     ui.handMode = mode
     ui.effects, ui.effectsContent = effects, content
 end
