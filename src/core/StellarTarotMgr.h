@@ -93,8 +93,8 @@ constexpr uint32 STELLAR_TAROT_SPELL_ARMOR_DOWN = 88793;
 // et des sorts : une creature 87650 ne croise ni l'objet ni le sort qui
 // portent ce numero. Le coeur les clone de gabarits natifs, faction amie, et
 // leur donne l'IA de gardien du module.
-constexpr uint32 STELLAR_TAROT_NPC_BOAR   = 87650;   // le sanglier de la carte 139
-constexpr uint32 STELLAR_TAROT_NPC_DOUBLE = 87651;   // le double de la carte 74
+constexpr uint32 STELLAR_TAROT_NPC_BOAR   = 87650;   // le sanglier de The Boar
+constexpr uint32 STELLAR_TAROT_NPC_DOUBLE = 87651;   // le double de The Mirage
 constexpr uint32 STELLAR_TAROT_ITEM_CRATE = 87600;              // the crate of goods a card lays in a corpse
 constexpr uint32 STELLAR_TAROT_SPELL_VISUAL_MAGIC = 88796;      // an explosion's animation, arcane
 constexpr uint32 STELLAR_TAROT_SPELL_VISUAL_PHYS  = 88797;      // an explosion's animation, physical
@@ -116,6 +116,42 @@ constexpr uint32 STELLAR_TAROT_WITNESS_FIRST = 87700;
 constexpr uint32 STELLAR_TAROT_WITNESS_LAST  = 87708;
 constexpr uint32 STELLAR_TAROT_SPELL_LOW_FIRST = 87710;
 constexpr uint32 STELLAR_TAROT_SPELL_LOW_LAST  = 87999;
+
+// The whole block of the module's spells, as the script reader accepts them.
+constexpr int32 STELLAR_TAROT_SPELL_FIRST = 87000;
+constexpr int32 STELLAR_TAROT_SPELL_LAST  = 89999;
+
+// The spell of a card's level: 88000 + 4 x card + level - 1 up to card 197, then
+// 89000 + 4 x (card - 198) + level - 1 (the 88 slice ends where its engine spells start).
+constexpr uint32 STELLAR_TAROT_LEVEL_BASE      = 88000;
+constexpr uint32 STELLAR_TAROT_LEVEL_SPLIT     = 197;
+constexpr uint32 STELLAR_TAROT_LEVEL_HIGH_BASE = 89000;
+
+// The card a level spell belongs to (level set when asked), or 0 for any other spell.
+inline uint32 StellarTarotCardOfLevelSpell(uint32 spellId, uint8* level = nullptr)
+{
+    uint32 card = 0, rest = 0;
+    if (spellId >= STELLAR_TAROT_LEVEL_BASE + 4 && spellId <= STELLAR_TAROT_LEVEL_BASE + 4 * STELLAR_TAROT_LEVEL_SPLIT + 3)
+    {
+        card = (spellId - STELLAR_TAROT_LEVEL_BASE) / 4;
+        rest = (spellId - STELLAR_TAROT_LEVEL_BASE) % 4;
+    }
+    else if (spellId >= STELLAR_TAROT_LEVEL_HIGH_BASE && spellId <= uint32(STELLAR_TAROT_SPELL_LAST))
+    {
+        card = STELLAR_TAROT_LEVEL_SPLIT + 1 + (spellId - STELLAR_TAROT_LEVEL_HIGH_BASE) / 4;
+        rest = (spellId - STELLAR_TAROT_LEVEL_HIGH_BASE) % 4;
+    }
+    if (card && level)
+        *level = uint8(rest + 1);
+    return card;
+}
+
+// A trigger aura: the generator takes them from the high spare pool, then from the low one.
+inline bool StellarTarotIsTriggerSpell(uint32 spellId)
+{
+    return (spellId >= STELLAR_TAROT_TRIGGER_FIRST && spellId <= STELLAR_TAROT_TRIGGER_LAST)
+        || (spellId >= STELLAR_TAROT_SPELL_LOW_FIRST && spellId <= STELLAR_TAROT_SPELL_LOW_LAST);
+}
 
 // A card has four edges and four activation levels; a board has 2 to 4 rows
 // and 2 to 4 columns; every number on an edge or around a board is 1 to 9.

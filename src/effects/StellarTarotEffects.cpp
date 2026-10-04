@@ -298,6 +298,8 @@ void StellarTarotEffects::OnLogin(Player* player)
         player->RemoveAurasDueToSpell(spellId);
     for (uint32 spellId = STELLAR_TAROT_TRIGGER_FIRST; spellId <= STELLAR_TAROT_TRIGGER_LAST; ++spellId)
         player->RemoveAurasDueToSpell(spellId);
+    for (uint32 spellId = STELLAR_TAROT_SPELL_LOW_FIRST; spellId <= STELLAR_TAROT_SPELL_LOW_LAST; ++spellId)
+        player->RemoveAurasDueToSpell(spellId);
     player->RemoveAurasDueToSpell(STELLAR_TAROT_BANNER_SPELL);
     Refresh(player);
 }
@@ -480,11 +482,10 @@ void StellarTarotEffects::Probe(Player const* player, uint32 spellId, std::strin
                     family = r.effect.script.substr(0, r.effect.script.find(':'));
                 break;
             }
-    // A level still starting is not in force yet: its spell names it, 88000 + 4 x card + level - 1.
-    if (!cardId && spellId >= 88000 && spellId < 88800)
+    // A level still starting is not in force yet: its spell names it.
+    if (!cardId && StellarTarotCardOfLevelSpell(spellId))
     {
-        cardId = (spellId - 88000) / 4;
-        level = uint8((spellId - 88000) % 4 + 1);
+        cardId = StellarTarotCardOfLevelSpell(spellId, &level);
         if (StellarTarotCard const* card = sStellarTarotMgr->Card(cardId))
             if (!card->effects[level - 1].script.name.empty())
                 family = card->effects[level - 1].script.name;
@@ -660,7 +661,7 @@ namespace
     // UN SORT DU MODULE NE DECLENCHE PAS LE MODULE.
     bool OursSpell(uint32 spellId)
     {
-        return spellId >= STELLAR_TAROT_CARD_ITEM_BASE && spellId <= STELLAR_TAROT_TRIGGER_LAST;
+        return spellId >= STELLAR_TAROT_CARD_ITEM_BASE && spellId <= uint32(STELLAR_TAROT_SPELL_LAST);
     }
 
     // LES RALENTISSEMENTS DES CARTES S'AJOUTENT, ET LE COEUR NE SAIT PAS LE

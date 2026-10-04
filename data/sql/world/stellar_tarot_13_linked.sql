@@ -8,19 +8,31 @@
 --
 -- GENERATED from the design workbook by the author's tooling. Regenerable.
 
-DELETE FROM `spell_linked_spell` WHERE ABS(`spell_trigger`) BETWEEN 87000 AND 88999;
+DELETE FROM `spell_linked_spell` WHERE ABS(`spell_trigger`) BETWEEN 87000 AND 89999;
 INSERT INTO `spell_linked_spell` (`spell_trigger`, `spell_effect`, `type`, `comment`) VALUES
-(88213, 88978, 2, 'The Grin level 2: the rest of the aura'),
-(88239, 88977, 2, 'The Familiar level 4: the rest of the aura'),
-(88356, 88973, 2, 'The Paranoia level 1: the rest of the aura'),
-(88358, 88972, 2, 'The Paranoia level 3: the rest of the aura'),
-(88420, 88971, 2, 'The Patron level 1: the rest of the aura'),
-(88420, 88970, 2, 'The Patron level 1: the rest of the aura'),
-(88449, 88969, 2, 'The Hysteria level 2: the rest of the aura'),
-(88451, 88968, 2, 'The Hysteria level 4: the rest of the aura'),
-(88613, 88950, 2, 'The Hanged Man level 2: the price'),
-(88617, 88948, 2, 'The Tower level 2: the price'),
-(88772, 88938, 2, 'The Oblivion level 1: the rest of the aura'),
-(88773, 88937, 2, 'The Oblivion level 2: the rest of the aura'),
-(88774, 88936, 2, 'The Oblivion level 3: the rest of the aura'),
-(88775, 88935, 2, 'The Oblivion level 4: the rest of the aura');
+(88221, 88985, 2, 'The Grin level 2: the rest of the aura'),
+(88251, 88984, 2, 'The Familiar level 4: the rest of the aura'),
+(88564, 88961, 2, 'The Artisan level 1: the rest of the aura'),
+(88564, 88960, 2, 'The Artisan level 1: the rest of the aura'),
+(88584, 88959, 2, 'The Scarecrow level 1: the price'),
+(88644, 88958, 2, 'The Patron level 1: the rest of the aura'),
+(88644, 88957, 2, 'The Patron level 1: the rest of the aura'),
+(88668, 88956, 2, 'The Paranoia level 1: the rest of the aura'),
+(88670, 88955, 2, 'The Paranoia level 3: the rest of the aura'),
+(88705, 88954, 2, 'The Hysteria level 2: the rest of the aura'),
+(88707, 88953, 2, 'The Hysteria level 4: the rest of the aura'),
+(89097, 88931, 2, 'The Guild level 2: the rest of the aura'),
+(89097, 88930, 2, 'The Guild level 2: the rest of the aura'),
+(89102, 88929, 2, 'The Trance level 3: the price'),
+(89208, 88916, 2, 'The Workshop level 1: the rest of the aura'),
+(89208, 88915, 2, 'The Workshop level 1: the rest of the aura'),
+(89274, 88905, 2, 'The Effigy level 3: the price'),
+(89389, 88900, 2, 'The Hanged Man level 2: the price'),
+(89393, 88898, 2, 'The Tower level 2: the price'),
+(89516, 88882, 2, 'The Gorgon level 1: the price'),
+(89560, 87995, 2, 'The Torment level 1: the rest of the aura'),
+(89561, 87994, 2, 'The Torment level 2: the rest of the aura'),
+(89628, 87986, 2, 'The Oblivion level 1: the rest of the aura'),
+(89629, 87985, 2, 'The Oblivion level 2: the rest of the aura'),
+(89630, 87984, 2, 'The Oblivion level 3: the rest of the aura'),
+(89631, 87983, 2, 'The Oblivion level 4: the rest of the aura');
