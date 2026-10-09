@@ -638,7 +638,7 @@ INSERT INTO `item_template_locale` (`ID`, `locale`, `Name`, `Description`) VALUE
 (87227, 'frFR', 'Le Péage', 'Une carte du tarot stellaire.'),
 (87228, 'frFR', 'Le Fantôme', 'Une carte du tarot stellaire.'),
 (87229, 'frFR', 'Le Brasier', 'Une carte du tarot stellaire.'),
-(87230, 'frFR', 'L''Aubaine', 'Une carte du tarot stellaire.'),
+(87230, 'frFR', 'La Bonne Affaire', 'Une carte du tarot stellaire.'),
 (87231, 'frFR', 'Le Tonnerre', 'Une carte du tarot stellaire.'),
 (87232, 'frFR', 'L''Ours', 'Une carte du tarot stellaire.'),
 (87233, 'frFR', 'Le Banquet', 'Une carte du tarot stellaire.'),
