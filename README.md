@@ -224,7 +224,7 @@ A card is composed in the window from three textures under
 `data/art/Interface/mod-Tarot/`: the frame (`UI/card_frame.blp`, a 2:3
 template with a transparent window, a banner, a box and four trapezoids),
 the card's illustration (`Cards/<name>.blp`, 512 x 512, DXT1 with mipmaps,
-shown behind the window) and its icon (`Cards/<name>_icon.blp`, 256 x 256,
+shown behind the window) and its icon (`Cards/<name>_icon.blp`, 128 x 128,
 a square cut from the illustration on the card's subject, framed like the
 game's icons, used in the deck, on the board and while dragging). The card's
 `art` column names the pair, without extension; a card without one shows

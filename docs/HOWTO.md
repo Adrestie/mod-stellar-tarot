@@ -125,7 +125,7 @@ The window composes a card from three textures, all under
 - `Cards/<name>.blp`: the illustration, 512 x 512, DXT1 with mipmaps. The
   window shows it behind the frame's window, cut top and bottom to the
   window's proportions.
-- `Cards/<name>_icon.blp`: the icon, 256 x 256, DXT1 with 1-bit alpha and
+- `Cards/<name>_icon.blp`: the icon, 128 x 128, DXT1 with 1-bit alpha and
   mipmaps: a square cut from the illustration on the card's subject, with the
   4-pixel frame of the game's own icons around it. The deck, the board and
   the drag ghost use it.
