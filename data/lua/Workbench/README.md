@@ -40,6 +40,12 @@ Workbench.Register({
 })
 ```
 
+A `name` is a string, or a table by locale (`enUS`, `frFR`, `deDE`, `esES`,
+`ruRU`, ...): each player reads the one of their client's language, `esES`
+for an `esMX` client that has none, English otherwise. The bench's own texts
+-- the window and the server's messages -- exist in English, French, German,
+Spanish and Russian.
+
 The window is the one the sphere grid's workbench had: three slots, an
 arrow, the result, a "Craft" button, a list under a clicked slot of what the
 bags hold that the bench would take -- sorted by type, quality and name, with
