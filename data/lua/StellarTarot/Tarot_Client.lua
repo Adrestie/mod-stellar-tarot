@@ -2628,7 +2628,9 @@ local function SortDeNiveau(id, name)
             end
         end
     end
-    return (id and PROC_SPELLS[id]) or (name and PROC_SPELLS[name])
+    -- by identifier when the client gives it: every level of a card now bears the card's name
+    if id then return PROC_SPELLS[id] end
+    return name and PROC_SPELLS[name]
 end
 
 ScaledBonus = function(text, count)
@@ -2676,7 +2678,8 @@ local function PartDeSaignement(id, name)
             end
         end
     end
-    return (id and PARTS_DE_SAIGNEMENT[id]) or (name and PARTS_DE_SAIGNEMENT[name])
+    if id then return PARTS_DE_SAIGNEMENT[id] end
+    return name and PARTS_DE_SAIGNEMENT[name]
 end
 
 local function BleedText(part)
@@ -2716,6 +2719,21 @@ if not STELLAR_TAROT_POTION_HOOKED then
         -- l'identifiant dans UnitAura.
         STELLAR_TAROT_POTION_BOOST[tonumber(id)] = any and map or nil
         STELLAR_TAROT_POTION_BOOST[spellName] = any and map or nil
+    end)
+end
+
+-- Which card laid a shared aura: the shield, the immunities and the invisibility belong to no card, so
+-- the server names the level that laid them and the tooltip takes that card's name ("Tarot: <card>").
+STELLAR_TAROT_ORIGIN = STELLAR_TAROT_ORIGIN or {}
+
+if not STELLAR_TAROT_ORIGIN_HOOKED then
+    STELLAR_TAROT_ORIGIN_HOOKED = true
+    local receiver = CreateFrame("Frame")
+    receiver:RegisterEvent("CHAT_MSG_ADDON")
+    receiver:SetScript("OnEvent", function(_, _, prefix, message)
+        if prefix ~= "StellarTarotOrigin" or not message then return end
+        local shared, level = message:match("^(%d+)\t(%d+)$")
+        if shared then STELLAR_TAROT_ORIGIN[tonumber(shared)] = tonumber(level) end
     end)
 end
 
@@ -2762,6 +2780,8 @@ if not STELLAR_TAROT_PROFIT_HOOKED then
     local function Nom(spellId)
         local nom = GetSpellInfo(spellId)
         if not nom then return nil end
+        -- "Tarot: <card>" in every language: the card's name is what follows the colon.
+        nom = nom:gsub("^[^:]*:%s*", "")
         return (nom:gsub("%s*%b()%s*$", ""))
     end
 
@@ -3057,12 +3077,32 @@ local function RaisePotionLines(tip, map)
     return changed
 end
 
+-- Every figure of a buff tooltip, multiplied by the stacks: a stackable aura whose amount the module
+-- computes writes it in plain words and without sign ("by 2%"), and the client multiplies only its "$s".
+local function ScaledFigures(text, count)
+    if not count or count <= 1 then return text end
+    return (text:gsub("(%d+[,.]?%d*)", function(n)
+        local v = tonumber((n:gsub(",", "."))) * count
+        local out = (v == math.floor(v)) and tostring(math.floor(v)) or string.format("%.1f", v)
+        if n:find(",") then out = out:gsub("%.", ",") end
+        return out
+    end))
+end
+
 function STELLAR_TAROT_ON_BUFF_TOOLTIP(tip, unit, index, filter)
     -- L'IDENTIFIANT DU SORT est la onzieme valeur de `UnitAura` en 3.3.5 :
     -- tout se range par lui, et deux sorts homonymes cessent de se prendre
     -- l'un pour l'autre. Le nom demeure en repli.
     local name, _, _, count, _, _, _, _, _, _, spellId = UnitAura(unit, index, filter)
     if not name then return end
+    -- A shared aura takes the name of the card that laid it.
+    local origin = spellId and STELLAR_TAROT_ORIGIN[spellId]
+    local cardName = origin and GetSpellInfo(origin)
+    local title = _G[tip:GetName() .. "TextLeft1"]
+    if cardName and title and UnitIsUnit(unit, "player") then
+        title:SetText(cardName)
+        tip:Show()
+    end
     local boost = (spellId and STELLAR_TAROT_POTION_BOOST[spellId])
                   or STELLAR_TAROT_POTION_BOOST[name]
     if boost then
@@ -3090,18 +3130,18 @@ function STELLAR_TAROT_ON_BUFF_TOOLTIP(tip, unit, index, filter)
                 if n then SCALED_NAMES[n] = true end
             end
         end
-        if (spellId and SCALED_NAMES[spellId]) or SCALED_NAMES[name] then return end
+        if (spellId and SCALED_NAMES[spellId]) or (not spellId and SCALED_NAMES[name]) then return end
     end
     if spellId ~= BANNER_SPELL and name ~= GetSpellInfo(BANNER_SPELL) then
         -- Les auras du module qui ne sont pas un niveau de carte -- le revers
         -- qu'une ligne pose a part, par exemple -- portent son nom : leur
         -- infobulle se multiplie par les cumuls comme celle d'un niveau.
         local id = SortDeNiveau(spellId, name)
-            or ((name:match("^Tarot stellaire") or name:match("^Stellar Tarot")) and -1 or nil)
+            or ((spellId and spellId >= 87000 and spellId <= 89999) and -1 or nil)
         if not id then return end
         local line = _G[tip:GetName() .. "TextLeft2"]
         if line and line:GetText() then
-            line:SetText(ScaledBonus(line:GetText(), count))
+            line:SetText(ScaledFigures(line:GetText(), count))
             tip:Show()
         end
         return

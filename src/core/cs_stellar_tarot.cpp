@@ -1605,6 +1605,35 @@ public:
                  " | ratings " + ratings +
                  " | speed " + std::to_string(int32(player->GetSpeedRate(MOVE_RUN) * 100.0f)) +
                  " | cd " + (cooldowns.empty() ? "-" : cooldowns);
+        // What the HUD reads on the server, and what the client shows of the chances: percents as
+        // integers (multipliers x100, chances and regen x10).
+        auto pct = [](float value) { return std::to_string(int32(std::lround(value * 100.0f))); };
+        auto tenths = [](float value) { return std::to_string(int32(std::lround(value * 10.0f))); };
+        std::string spellCrit;
+        for (uint8 school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
+            spellCrit += (school ? "," : "") + tenths(player->GetFloatValue(PLAYER_SPELL_CRIT_PERCENTAGE1 + school));
+        extra += " | mult " + pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE)) + "," +
+                 pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN)) + "," +
+                 pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_MELEE_DAMAGE_TAKEN_PCT)) + "," +
+                 pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALING_DONE_PERCENT)) + "," +
+                 pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALING_PCT)) +
+                 " | chances " + tenths(player->GetFloatValue(PLAYER_CRIT_PERCENTAGE)) + "," +
+                 tenths(player->GetFloatValue(PLAYER_RANGED_CRIT_PERCENTAGE)) + "," +
+                 tenths(player->GetFloatValue(PLAYER_DODGE_PERCENTAGE)) + "," +
+                 tenths(player->GetFloatValue(PLAYER_PARRY_PERCENTAGE)) + "," +
+                 tenths(player->GetFloatValue(PLAYER_BLOCK_PERCENTAGE)) +
+                 " | scrit " + spellCrit +
+                 " | haste " + pct(player->GetFloatValue(UNIT_MOD_CAST_SPEED)) + "," +
+                 std::to_string(player->GetAttackTime(BASE_ATTACK)) + "," +
+                 std::to_string(player->GetAttackTime(RANGED_ATTACK)) +
+                 " | regen " + tenths(player->GetFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER + AsUnderlyingType(POWER_MANA))) + "," +
+                 tenths(player->GetFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER + AsUnderlyingType(POWER_MANA))) +
+                 " | gain " + std::to_string(player->GetTotalAuraModifier(SPELL_AURA_MOD_XP_PCT)) + "," +
+                 std::to_string(player->GetTotalAuraModifier(SPELL_AURA_MOD_XP_QUEST_PCT)) + "," +
+                 std::to_string(player->GetTotalAuraModifier(SPELL_AURA_MOD_REPUTATION_GAIN)) +
+                 " | spellpen " + std::to_string(player->GetInt32Value(PLAYER_FIELD_MOD_TARGET_RESISTANCE)) +
+                 " | moves " + pct(player->GetSpeedRate(MOVE_SWIM)) + "," + pct(player->GetSpeedRate(MOVE_FLIGHT)) +
+                 " | expertise " + std::to_string(player->GetUInt32Value(PLAYER_EXPERTISE));
         // The durability of what the player wears, summed.
         uint32 usure = 0, usureMax = 0;
         for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
@@ -1619,6 +1648,36 @@ public:
                  " | mounted " + std::to_string(player->IsMounted() ? 1 : 0) +
                  " | pos " + std::to_string(int32(player->GetPositionX() * 10)) + "," +
                  std::to_string(int32(player->GetPositionY() * 10));
+        // What the core reads in its own formulas: profession skills (pure:with bonuses), a 1000-point
+        // Fire Blast crit and the damage multiplier against the bench target, stealth detection,
+        // and what changes a fall.
+        std::string skills;
+        for (uint16 skill : { 129, 164, 165, 171, 182, 185, 186, 197, 202, 333, 356, 393, 755, 773 })
+            if (player->HasSkill(skill))
+                skills += (skills.empty() ? "" : ",") + std::to_string(skill) + ":" +
+                          std::to_string(player->GetPureSkillValue(skill)) + ":" + std::to_string(player->GetSkillValue(skill));
+        Unit* versus = player;
+        if (it != BenchTargets().end())
+            if (Creature* target = ObjectAccessor::GetCreature(*player, it->second))
+                versus = target;
+        SpellInfo const* const blast = sSpellMgr->GetSpellInfo(42873);
+        extra += " | height " + std::to_string(int32(player->GetPositionZ() * 10)) +
+                 " | skills " + (skills.empty() ? "-" : skills);
+        if (blast)
+            extra += " | critdmg " + std::to_string(Unit::SpellCriticalDamageBonus(player, blast, 1000, versus)) +
+                     " | donemod " + pct(player->SpellPctDamageModsDone(versus, blast, SPELL_DIRECT_DAMAGE));
+        // The other bench creatures around (strikers, casters): what a blow sent back did to them.
+        std::list<Creature*> around;
+        player->GetCreatureListWithEntryInGrid(around, BENCH_CREATURE, 30.0f);
+        std::string hurt;
+        for (Creature const* other : around)
+            if (other != versus && other->IsAlive())
+                hurt += (hurt.empty() ? "" : ",") + std::to_string(other->GetMaxHealth() - other->GetHealth());
+        extra += " | near " + (hurt.empty() ? std::string("-") : hurt);
+        extra += " | detect " + std::to_string(player->m_stealthDetect.GetValue(STEALTH_GENERAL)) +
+                 " | aids " + std::to_string(player->HasAuraType(SPELL_AURA_WATER_BREATHING) ? 1 : 0) + "," +
+                 std::to_string(player->HasAuraType(SPELL_AURA_FEATHER_FALL) ? 1 : 0) + "," +
+                 std::to_string(player->GetTotalAuraModifier(SPELL_AURA_SAFE_FALL));
         Say(handler, STELLAR_TAROT_STR_TEST_SNAPSHOT, player->GetName(), player->GetHealth(), player->GetMaxHealth(),
             player->GetPower(POWER_MANA), player->GetMaxPower(POWER_MANA), player->GetMoney(),
             player->IsInCombat() ? 1 : 0, extra);

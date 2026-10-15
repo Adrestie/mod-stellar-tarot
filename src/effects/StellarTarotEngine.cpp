@@ -1216,10 +1216,16 @@ namespace
 
     // A control or a shield of the module on `target`, for `sec` seconds,
     // with `bp` as the amount when the spell takes one.
-    void Put(Player* player, Unit* target, uint32 spellId, int32 sec, int32 const* bp = nullptr)
+    // origin: the level spell of the card that lays a shared aura (shield, immunity, invisibility); the
+    // carrier's addon is told, and titles the aura's tooltip with that card's name.
+    void Put(Player* player, Unit* target, uint32 spellId, int32 sec, int32 const* bp = nullptr, uint32 origin = 0)
     {
         if (!target || !target->IsAlive())
             return;
+        if (origin)
+            if (Player* carrier = target->ToPlayer())
+                StellarTarotEffects::TellAddon(carrier, "StellarTarotOrigin",
+                                               std::to_string(spellId) + "\t" + std::to_string(origin));
         if (bp)
         {
             // Le montant d'une aura déjà là ne se recalcule pas : on l'enlève
@@ -3896,7 +3902,7 @@ namespace
                                      : A == "shield_other" ? PctOf(who->GetMaxHealth(), _a)
                                                            : PctOf(amount, _a));
                 if (bp > 0)
-                    Put(player, who, STELLAR_TAROT_SPELL_SHIELD, _b ? _b : 15, &bp);
+                    Put(player, who, STELLAR_TAROT_SPELL_SHIELD, _b ? _b : 15, &bp, _spellId);
             }
             else if (A == "shield_ally" || A == "shield_group")
             {
@@ -3906,7 +3912,7 @@ namespace
                     for (Player* member : GroupAround(player, float(_b)))
                     {
                         int32 const bp = int32(PctOf(member->GetMaxHealth(), _a));
-                        Put(player, member, STELLAR_TAROT_SPELL_SHIELD, sec, &bp);
+                        Put(player, member, STELLAR_TAROT_SPELL_SHIELD, sec, &bp, _spellId);
                     }
                 }
                 else
@@ -3918,7 +3924,7 @@ namespace
                     if (pick)
                     {
                         int32 const bp = int32(PctOf(pick->GetMaxHealth(), _a));
-                        Put(player, pick, STELLAR_TAROT_SPELL_SHIELD, sec, &bp);
+                        Put(player, pick, STELLAR_TAROT_SPELL_SHIELD, sec, &bp, _spellId);
                     }
                 }
             }
@@ -4062,7 +4068,7 @@ namespace
                         Put(player, unit, sort, _a);
             }
             else if (A == "silence") Put(player, other, STELLAR_TAROT_SPELL_SILENCE, _a);
-            else if (A == "immune_snare") Put(player, player, STELLAR_TAROT_SPELL_IMMUNE_SNARE, _a);
+            else if (A == "immune_snare") Put(player, player, STELLAR_TAROT_SPELL_IMMUNE_SNARE, _a, nullptr, _spellId);
             else if (A == "bleed")
             {
                 int32 const perTick = int32(PctOf(uint32(player->GetTotalAttackPowerValue(BASE_ATTACK)), _b));
@@ -4373,7 +4379,7 @@ namespace
             // le temps dit.
             else if (A == "invisible")
             {
-                Put(player, player, STELLAR_TAROT_SPELL_INVISIBLE, _a);
+                Put(player, player, STELLAR_TAROT_SPELL_INVISIBLE, _a, nullptr, _spellId);
                 if (_b)
                     Put(player, player, STELLAR_TAROT_SPELL_STUN, _a);
             }
@@ -4999,7 +5005,8 @@ namespace
 
         int32 Valeur(Player* player, Choix const& c) const
         {
-            return _secondaires
+            // The haste of a speed draw is a rating too.
+            return (_secondaires || _vitesse)
                  ? int32(player->GetUInt32Value(uint16(PLAYER_FIELD_COMBAT_RATING_1) + uint16(c.index)))
                  : int32(player->GetStat(Stats(c.index)));
         }
@@ -7108,6 +7115,9 @@ namespace
     //     est alors la NUIT, et l'etat bas le jour.
     //
     //     `mana:` / `heal:` : a chaque CHANGEMENT, cette part est rendue.
+    //     `sp:<haut>:<bas>` : the damage and healing done effects of that
+    //     state's aura are this percentage of the player's spell power, read
+    //     when the aura is laid (0: the DBC amount stands).
     //     `both:<toutes>:<duree>` : toutes les `toutes` secondes, les DEUX
     //     auras se posent ensemble pour `duree` secondes, a deux cumuls --
     //     l'eclipse.
@@ -7164,6 +7174,8 @@ namespace
                 if (mot == "heal" && r.Int(1, 100, _heal))
                     continue;
                 if (mot == "both" && r.Int(1, 86400, _eclipseChaque) && r.Int(1, 3600, _eclipseDuree))
+                    continue;
+                if (mot == "sp" && r.Int(0, 1000, _spHaut) && r.Int(0, 1000, _spBas))
                     continue;
                 // LE SOUS-SCRIPT D'UN ETAT : tout ce qui suit lui appartient,
                 // jusqu'au mot de l'autre etat.
@@ -7378,7 +7390,7 @@ namespace
             if (autre)
                 player->RemoveAurasDueToSpell(autre);
             if (veut && !player->HasAura(veut))
-                player->AddAura(veut, player);
+                Lay(player, veut, haute ? _spHaut : _spBas);
             // After an eclipse, the state's aura goes back to a single stack.
             if (veut)
                 if (Aura* aura = player->GetAura(veut, player->GetGUID()))
@@ -7398,11 +7410,33 @@ namespace
                     continue;
                 Aura* aura = player->GetAura(sort, player->GetGUID());
                 if (!aura)
-                    aura = player->AddAura(sort, player);
+                    aura = Lay(player, sort, sort == uint32(_haut) ? _spHaut : _spBas);
                 if (aura && aura->GetStackAmount() < 2)
                     aura->SetStackAmount(2);
             }
             _pose = true;
+        }
+
+        // A state's aura. spPct: its damage and healing done effects become
+        // that share of the player's spell power; the stacks then multiply it.
+        Aura* Lay(Player* player, uint32 spellId, int32 spPct)
+        {
+            if (!spPct)
+                return player->AddAura(spellId, player);
+            SpellInfo const* const info = sSpellMgr->GetSpellInfo(spellId);
+            if (!info)
+                return nullptr;
+            int32 const own = std::max(0, player->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_MAGIC));
+            int32 const bp = int32(std::llround(double(own) * spPct / 100.0));
+            int32 veut[MAX_SPELL_EFFECTS] = { 0, 0, 0 };
+            for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            {
+                bool const part = info->Effects[i].ApplyAuraName == SPELL_AURA_MOD_DAMAGE_DONE
+                               || info->Effects[i].ApplyAuraName == SPELL_AURA_MOD_HEALING_DONE;
+                veut[i] = part ? bp : info->Effects[i].CalcValue(player);
+            }
+            player->CastCustomSpell(player, spellId, &veut[0], &veut[1], &veut[2], true);
+            return player->GetAura(spellId, player->GetGUID());
         }
 
         void Effacer(Player* player)
@@ -7417,7 +7451,7 @@ namespace
         }
 
         int32 _sec = 0, _groupe = 0, _haut = 0, _bas = 0, _mana = 0, _heal = 0;
-        int32 _eclipseChaque = 0, _eclipseDuree = 0;
+        int32 _eclipseChaque = 0, _eclipseDuree = 0, _spHaut = 0, _spBas = 0;
         bool _nuit = false;
         bool _haute = true;
         bool _pose = false;
