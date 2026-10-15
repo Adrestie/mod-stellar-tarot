@@ -38,25 +38,82 @@ local Handlers = AIO.AddHandlers("Workbench", {})
 
 local max, min, floor = math.max, math.min, math.floor
 local fmt = string.format
-local FR = GetLocale() == "frFR"
-
-local L = {
-    title      = FR and "Établi" or "Workbench",
-    craft      = FR and "Fabriquer" or "Craft",
-    empty      = FR and "Vide" or "Empty",
-    all        = FR and "Tout" or "All",
-    choose     = FR and "Clic gauche : choisir un objet" or "Left-click: choose an item",
-    remove     = FR and "Clic droit : retirer" or "Right-click: remove",
-    list       = FR and "Choisir un objet" or "Choose an item",
-    none_fits  = FR and "Aucun objet dans vos sacs ne convient"
-                    or "No item in your bags is suitable",
-    help       = FR and "Posez des objets : la recette qu'ils composent apparaîtra."
-                    or "Place items: the recipe they make will appear.",
-    p_title    = FR and "Résultat" or "Result",
-    help_title = FR and "Les recettes de l'établi" or "Workbench recipes",
-    help_lock  = FR and "Ce qui est posé fixe l'artisanat : videz l'établi pour en changer."
-                    or "What is placed sets the craft: clear the bench to change it.",
+-- The texts, by the client's language: English where there is none, the
+-- Spanish of Spain for a Mexican client.
+local TEXTS = {
+    enUS = {
+        title      = "Workbench",
+        craft      = "Craft",
+        empty      = "Empty",
+        all        = "All",
+        choose     = "Left-click: choose an item",
+        remove     = "Right-click: remove",
+        list       = "Choose an item",
+        none_fits  = "No item in your bags is suitable",
+        help       = "Place items: the recipe they make will appear.",
+        p_title    = "Result",
+        help_title = "Workbench recipes",
+        help_lock  = "What is placed sets the craft: clear the bench to change it.",
+    },
+    frFR = {
+        title      = "Établi",
+        craft      = "Fabriquer",
+        empty      = "Vide",
+        all        = "Tout",
+        choose     = "Clic gauche : choisir un objet",
+        remove     = "Clic droit : retirer",
+        list       = "Choisir un objet",
+        none_fits  = "Aucun objet dans vos sacs ne convient",
+        help       = "Posez des objets : la recette qu'ils composent apparaîtra.",
+        p_title    = "Résultat",
+        help_title = "Les recettes de l'établi",
+        help_lock  = "Ce qui est posé fixe l'artisanat : videz l'établi pour en changer.",
+    },
+    deDE = {
+        title      = "Werkbank",
+        craft      = "Herstellen",
+        empty      = "Leer",
+        all        = "Alle",
+        choose     = "Linksklick: Gegenstand wählen",
+        remove     = "Rechtsklick: entfernen",
+        list       = "Gegenstand wählen",
+        none_fits  = "Kein Gegenstand in Euren Taschen passt",
+        help       = "Legt Gegenstände auf: Das Rezept, das sie ergeben, erscheint hier.",
+        p_title    = "Ergebnis",
+        help_title = "Rezepte der Werkbank",
+        help_lock  = "Was aufliegt, legt das Handwerk fest: Räumt die Werkbank, um es zu wechseln.",
+    },
+    esES = {
+        title      = "Banco de trabajo",
+        craft      = "Fabricar",
+        empty      = "Vacío",
+        all        = "Todo",
+        choose     = "Clic izquierdo: elegir un objeto",
+        remove     = "Clic derecho: retirar",
+        list       = "Elegir un objeto",
+        none_fits  = "Ningún objeto de tus bolsas sirve",
+        help       = "Coloca objetos: aparecerá la receta que forman.",
+        p_title    = "Resultado",
+        help_title = "Recetas del banco de trabajo",
+        help_lock  = "Lo colocado fija la artesanía: vacía el banco para cambiarla.",
+    },
+    ruRU = {
+        title      = "Верстак",
+        craft      = "Создать",
+        empty      = "Пусто",
+        all        = "Все",
+        choose     = "Левый щелчок: выбрать предмет",
+        remove     = "Правый щелчок: убрать",
+        list       = "Выберите предмет",
+        none_fits  = "В ваших сумках нет подходящих предметов",
+        help       = "Положите предметы: здесь появится рецепт, который они составляют.",
+        p_title    = "Результат",
+        help_title = "Рецепты верстака",
+        help_lock  = "Положенное определяет ремесло: очистите верстак, чтобы сменить его.",
+    },
 }
+local LOCALE = GetLocale()
+local L = TEXTS[LOCALE] or (LOCALE == "esMX" and TEXTS.esES) or TEXTS.enUS
 
 -- EVERY DRAWING CONSTANT IN ONE TABLE. The client runs Lua 5.1, which allows
 -- a function sixty upvalues, and each bare local eats one of them.

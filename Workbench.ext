@@ -60,40 +60,67 @@ local AIO = require("AIO")
 local fmt = string.format
 
 Workbench = Workbench or {}
-Workbench.VERSION = 2
+Workbench.VERSION = 4
 
 -- The object in the world: one template, shipped by every module that uses
 -- the bench (inserted only when absent), placed by hand with `.gobject add`.
 local WORKBENCH_ENTRY = 810000
 local GAMEOBJECT_EVENT_ON_USE = 14
-local LOCALE_FRFR = 2
+local LOCALES = { [0] = "enUS", "koKR", "frFR", "deDE", "zhCN", "zhTW", "esES", "esMX", "ruRU" }
 
 local Handlers = AIO.AddHandlers("Workbench", {})
 
 -- ---------------------------------------------------------------------------
--- Texts, by the player's language
+-- Texts, by the player's language: English where there is none, and the
+-- Spanish of Spain for a Mexican client when the text has no esMX.
 -- ---------------------------------------------------------------------------
 
 local MESSAGES = {
-    not_carried = { "You do not carry that item.", "Vous ne portez pas cet objet." },
-    nobody      = { "Nothing on this workbench takes that item.",
-                    "Rien sur cet établi n'accepte cet objet." },
-    locked      = { "That item belongs to another craft than what is already on the bench.",
-                    "Cet objet relève d'un autre artisanat que ce qui est déjà sur l'établi." },
-    no_recipe   = { "The bench cannot make that with what is on it.",
-                    "L'établi ne peut pas faire cela avec ce qui est posé." },
-    no_fit      = { "That item does not go with what is on the bench.",
-                    "Cet objet ne va pas avec ce qui est sur l'établi." },
+    not_carried = {
+        enUS = "You do not carry that item.",
+        frFR = "Vous ne portez pas cet objet.",
+        deDE = "Ihr tragt diesen Gegenstand nicht bei Euch.",
+        esES = "No llevas ese objeto.",
+        ruRU = "У вас нет этого предмета.",
+    },
+    nobody = {
+        enUS = "Nothing on this workbench takes that item.",
+        frFR = "Rien sur cet établi n'accepte cet objet.",
+        deDE = "Nichts an dieser Werkbank nimmt diesen Gegenstand an.",
+        esES = "Nada en este banco de trabajo acepta ese objeto.",
+        ruRU = "Ничто на этом верстаке не принимает этот предмет.",
+    },
+    locked = {
+        enUS = "That item belongs to another craft than what is already on the bench.",
+        frFR = "Cet objet relève d'un autre artisanat que ce qui est déjà sur l'établi.",
+        deDE = "Dieser Gegenstand gehört zu einem anderen Handwerk als das, was bereits auf der Werkbank liegt.",
+        esES = "Ese objeto pertenece a otra artesanía que lo que ya está en el banco.",
+        ruRU = "Этот предмет относится к другому ремеслу, чем то, что уже лежит на верстаке.",
+    },
+    no_recipe = {
+        enUS = "The bench cannot make that with what is on it.",
+        frFR = "L'établi ne peut pas faire cela avec ce qui est posé.",
+        deDE = "Die Werkbank kann das aus dem, was aufliegt, nicht herstellen.",
+        esES = "El banco no puede fabricar eso con lo que tiene encima.",
+        ruRU = "Верстак не может сделать это из того, что на нём лежит.",
+    },
+    no_fit = {
+        enUS = "That item does not go with what is on the bench.",
+        frFR = "Cet objet ne va pas avec ce qui est sur l'établi.",
+        deDE = "Dieser Gegenstand passt nicht zu dem, was auf der Werkbank liegt.",
+        esES = "Ese objeto no va con lo que hay en el banco.",
+        ruRU = "Этот предмет не подходит к тому, что лежит на верстаке.",
+    },
 }
-
-local function Say(player, key)
-    local m = MESSAGES[key]
-    player:SendNotification(player:GetDbLocaleIndex() == LOCALE_FRFR and m[2] or m[1])
-end
 
 local function Localized(name, player)
     if type(name) ~= "table" then return tostring(name) end
-    return (player:GetDbLocaleIndex() == LOCALE_FRFR and name.frFR) or name.enUS or "?"
+    local locale = LOCALES[player:GetDbLocaleIndex()] or "enUS"
+    return name[locale] or (locale == "esMX" and name.esES) or name.enUS or "?"
+end
+
+local function Say(player, key)
+    player:SendNotification(Localized(MESSAGES[key], player))
 end
 
 -- ---------------------------------------------------------------------------
@@ -162,7 +189,6 @@ end
 -- ---------------------------------------------------------------------------
 
 local SMSG_ITEM_QUERY_SINGLE_RESPONSE = 0x058
-local LOCALES = { [0] = "enUS", "koKR", "frFR", "deDE", "zhCN", "zhTW", "esES", "esMX", "ruRU" }
 local MAX_STATS, MAX_DAMAGES, MAX_SPELLS, MAX_SOCKETS = 10, 2, 5, 3
 
 local function U32(p, v)
