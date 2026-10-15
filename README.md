@@ -33,15 +33,18 @@ Stop the world server and close the game, then run `installer.exe`, the
 WoW-mods installer ([WoW-mods-installer releases](https://github.com/Adrestie/WoW-mods-installer/releases)), and give it this
 folder, or drop the folder on `installer.exe`. Its window asks for the world
 server folder and the game folder, finds the rest, shows what it found of the
-module, and offers **Install** or **Remove**. `installer.json` declares
+module, and offers **Install**, or **Update** and **Remove**. `installer.json` declares
 everything it puts in place: the sources in `modules/`, the configuration, the
 interface in `lua_scripts/StellarTarot/`, the shared workbench (see below),
 and the module's rows of four DBC files and its art in the game's archives.
 Then rebuild the core; on first start, the core updater applies
 `data/sql/world/` and `data/sql/characters/`.
 
-Run again on a server that already has the module, the installer removes it,
-what players collected included; to update, remove then install again.
+Run again on a server that already has the module, the installer removes it
+(**Remove**), what players collected included, or updates it to the folder
+given (**Update**): the new version replaces the old one, and players keep
+their cards, boards, presets, the spells cards taught and their action bars;
+the creatures you placed and your configuration stay too.
 
 By hand: copy the module into `modules/`, apply `data/sql/world/` then
 `data/sql/characters/` in order, copy `conf/mod-stellar-tarot.conf.dist` to

@@ -46,11 +46,14 @@
       "tables": ["mod_stellar_tarot_account_card", "mod_stellar_tarot_account_board",
                  "mod_stellar_tarot_character_board", "mod_stellar_tarot_character_cell",
                  "mod_stellar_tarot_preset", "mod_stellar_tarot_preset_cell"],
+      "kept_on_update": ["mod_stellar_tarot_account_card", "mod_stellar_tarot_account_board",
+                         "mod_stellar_tarot_character_board", "mod_stellar_tarot_character_cell",
+                         "mod_stellar_tarot_preset", "mod_stellar_tarot_preset_cell"],
       "rows": [
-        { "table": "character_spell", "where": "spell IN ({ids:Spell.dbc})" },
-        { "table": "character_spell_cooldown", "where": "spell IN ({ids:Spell.dbc})" },
+        { "table": "character_spell", "where": "spell IN ({ids:Spell.dbc})", "kept_on_update": true },
+        { "table": "character_spell_cooldown", "where": "spell IN ({ids:Spell.dbc})", "kept_on_update": true },
         { "table": "character_aura", "where": "spell IN ({ids:Spell.dbc})" },
-        { "table": "character_action", "where": "type = 0 AND action IN ({ids:Spell.dbc})" },
+        { "table": "character_action", "where": "type = 0 AND action IN ({ids:Spell.dbc})", "kept_on_update": true },
         { "table": "updates", "where": "name IN ({sql_files:characters})" }
       ]
     },
@@ -71,7 +74,7 @@
         { "table": "spell_proc", "where": "ABS(SpellId) BETWEEN 87000 AND 88999" },
         { "table": "spell_linked_spell", "where": "ABS(spell_trigger) BETWEEN 87000 AND 88999" },
         { "table": "spell_script_names", "where": "spell_id BETWEEN 87000 AND 88999" },
-        { "table": "creature", "where": "id BETWEEN 87000 AND 88999" },
+        { "table": "creature", "where": "id BETWEEN 87000 AND 88999", "kept_on_update": true },
         { "table": "creature_template_model", "where": "CreatureID BETWEEN 87000 AND 88999" },
         { "table": "creature_template", "where": "entry BETWEEN 87000 AND 88999" },
         { "table": "command", "where": "name = 'tarot' OR name LIKE 'tarot %'" },
