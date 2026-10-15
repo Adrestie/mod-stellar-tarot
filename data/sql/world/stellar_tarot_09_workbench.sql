@@ -15,4 +15,8 @@ INSERT IGNORE INTO `gameobject_template`
 (810000, 3, 8176, 'Workbench', '', '', '', 1.6, 0, 0, 0, 0, '');
 
 INSERT IGNORE INTO `gameobject_template_locale` (`entry`, `locale`, `name`, `castBarCaption`) VALUES
-(810000, 'frFR', 'Établi', '');
+(810000, 'frFR', 'Établi', ''),
+(810000, 'deDE', 'Werkbank', ''),
+(810000, 'esES', 'Banco de trabajo', ''),
+(810000, 'esMX', 'Banco de trabajo', ''),
+(810000, 'ruRU', 'Верстак', '');
