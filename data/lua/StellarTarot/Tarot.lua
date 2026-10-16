@@ -43,14 +43,16 @@ local fmt = string.format
 local CARD_BASE = 87000
 local BOARD_BASE = 87500
 
-local LOCALE_FRFR = 2
+-- The client's language, as the world database names it (GetDbLocaleIndex):
+-- the five the module writes. esMX reads the Spanish rows; any other, English.
+local DB_LOCALES = { [2] = "frFR", [3] = "deDE", [6] = "esES", [7] = "esES", [8] = "ruRU" }
 local ITEM_EVENT_ON_USE = 2
 
 -- The catalogue is served in the player's language: the item names come from
 -- item_template_locale, the tag names and the effect texts from the module's
 -- own locale tables. Anything without a row in that language is English.
 local function Locale(player)
-    return player:GetDbLocaleIndex() == LOCALE_FRFR and "frFR" or "enUS"
+    return DB_LOCALES[player:GetDbLocaleIndex()] or "enUS"
 end
 
 local function Text(q, index)

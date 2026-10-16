@@ -54,54 +54,95 @@ local fmt, floor = string.format, math.floor
 -- Texts, in the client's language
 -- ---------------------------------------------------------------------------
 
-local FR = GetLocale() == "frFR"
+-- THE CLIENT'S LANGUAGE, one of the five the module writes: English,
+-- French, German, Spanish (esES and esMX) and Russian. Any other client
+-- reads English.
+local LOCALE = GetLocale()
+local LANG = (LOCALE == "frFR" and "fr") or (LOCALE == "deDE" and "de")
+          or ((LOCALE == "esES" or LOCALE == "esMX") and "es") or (LOCALE == "ruRU" and "ru") or "en"
+local FR = LANG == "fr"
+-- A text in the client's language: English, French, German, Spanish, Russian.
+local function T(en, fr, de, es, ru)
+    return (LANG == "fr" and fr) or (LANG == "de" and de) or (LANG == "es" and es) or (LANG == "ru" and ru) or en
+end
 local L = {
-    title         = FR and "Tarot stellaire" or "Stellar Tarot",
-    deck          = FR and "Deck" or "Deck",
-    search        = FR and "Rechercher..." or "Search...",
-    all           = FR and "Toutes" or "All",
-    unknown       = FR and "Carte inconnue" or "Unknown card",
-    cumulative    = FR and "Cumulatif" or "Cumulative",
-    spell_unknown = FR and "sort n°%d" or "spell #%d",
-    edges         = FR and "Bords : haut %d, droite %d, bas %d, gauche %d"
-                       or "Edges: top %d, right %d, bottom %d, left %d",
-    level         = FR and "(%d) %s" or "(%d) %s",
-    combo         = FR and "%d : %s" or "%d: %s",             -- a line of the card's box
-    combos        = FR and "Paires :" or "Pairs:",
-    size          = FR and "%d ligne(s) x %d colonne(s)" or "%d row(s) x %d column(s)",
-    row_numbers   = FR and "Chiffres des lignes : %s" or "Row numbers: %s",
-    col_numbers   = FR and "Chiffres des colonnes : %s" or "Column numbers: %s",
-    already_known = FR and "Déjà connu" or "Already known",
-    on_board      = FR and "Posée sur le plateau" or "Laid on the board",
-    board         = FR and "Plateau" or "Board",
-    board_none    = FR and "Aucun plateau équipé" or "No board equipped",
-    board_pick    = FR and "Cliquez pour choisir un plateau" or "Click to choose a board",
-    board_take_off = FR and "Retirer le plateau" or "Take the board off",
-    board_change  = FR and "Changer de plateau retire toutes les cartes."
-                       or "Changing the board takes every card off.",
-    remove_all    = FR and "Tout retirer" or "Remove all",
-    remove_all_ask = FR and "Retirer toutes les cartes du plateau ?" or "Take every card off the board?",
-    yes           = FR and "Retirer" or "Remove",
-    cancel        = FR and "Annuler" or "Cancel",
-    cell_empty    = FR and "Case vide" or "Empty cell",
-    cell_hint     = FR and "Clic droit : retirer la carte" or "Right-click: take the card off",
-    activation    = FR and "Activation : %d / 4" or "Activation: %d / 4",
-    inert         = FR and "Inerte : aucun bord ne se raccorde." or "Inert: no edge matches.",
-    highest_only  = FR and "Seul le niveau atteint s'applique." or "Only the level reached applies.",
-    cumulative_long = FR and "Cumulatif : un niveau atteint conserve les précédents."
-                       or "Cumulative: a level reached keeps the ones below.",
-    presets       = FR and "Presets" or "Presets",
-    preset_save   = FR and "Enregistrer" or "Save",
-    preset_load   = FR and "Cliquez pour charger ce preset" or "Click to load this preset",
-    preset_delete = FR and "Supprimer ce preset" or "Delete this preset",
-    preset_none   = FR and "Aucun preset enregistré." or "No preset saved.",
-    hand          = FR and "Aperçu" or "Preview",
-    hand_empty    = FR and "Survolez une carte" or "Hover a card",
-    effects       = FR and "Effets actifs" or "Active effects",
-    effects_none  = FR and "Aucun effet actif." or "No active effect.",
-    effects_wheel = FR and "Molette de la souris : faire défiler la liste."
-                       or "Mouse wheel: scroll the list.",
-    effect_line   = FR and "%s — niveau %d : %s" or "%s — level %d: %s",
+    title         = T("Stellar Tarot", "Tarot stellaire", "Sternentarot", "Tarot estelar", "Звёздное Таро"),
+    deck          = T("Deck", "Deck", "Deck", "Mazo", "Колода"),
+    search        = T("Search...", "Rechercher...", "Suchen...", "Buscar...", "Поиск..."),
+    all           = T("All", "Toutes", "Alle", "Todas", "Все"),
+    unknown       = T("Unknown card", "Carte inconnue", "Unbekannte Karte", "Carta desconocida", "Неизвестная карта"),
+    cumulative    = T("Cumulative", "Cumulatif", "Kumulativ", "Acumulativa", "Накопительная"),
+    spell_unknown = T("spell #%d", "sort n°%d", "Zauber Nr. %d", "hechizo n.º %d", "заклинание №%d"),
+    edges         = T("Edges: top %d, right %d, bottom %d, left %d",
+                      "Bords : haut %d, droite %d, bas %d, gauche %d",
+                      "Kanten: oben %d, rechts %d, unten %d, links %d",
+                      "Bordes: arriba %d, derecha %d, abajo %d, izquierda %d",
+                      "Края: верх %d, право %d, низ %d, лево %d"),
+    level         = "(%d) %s",
+    combo         = T("%d: %s", "%d : %s", "%d: %s", "%d: %s", "%d: %s"),     -- a line of the card's box
+    combos        = T("Pairs:", "Paires :", "Paare:", "Pares:", "Пары:"),
+    size          = T("%d row(s) x %d column(s)", "%d ligne(s) x %d colonne(s)", "%d Zeile(n) x %d Spalte(n)",
+                      "%d fila(s) x %d columna(s)", "%d стр. x %d столб."),
+    row_numbers   = T("Row numbers: %s", "Chiffres des lignes : %s", "Zahlen der Zeilen: %s",
+                      "Números de las filas: %s", "Числа строк: %s"),
+    col_numbers   = T("Column numbers: %s", "Chiffres des colonnes : %s", "Zahlen der Spalten: %s",
+                      "Números de las columnas: %s", "Числа столбцов: %s"),
+    already_known = T("Already known", "Déjà connu", "Bereits bekannt", "Ya conocida", "Уже известно"),
+    on_board      = T("Laid on the board", "Posée sur le plateau", "Auf dem Spielbrett", "Colocada en el tablero",
+                      "Лежит на поле"),
+    board         = T("Board", "Plateau", "Spielbrett", "Tablero", "Поле"),
+    board_none    = T("No board equipped", "Aucun plateau équipé", "Kein Spielbrett angelegt",
+                      "Ningún tablero equipado", "Поле не выбрано"),
+    board_pick    = T("Click to choose a board", "Cliquez pour choisir un plateau", "Klicken, um ein Spielbrett zu wählen",
+                      "Haz clic para elegir un tablero", "Щелкните, чтобы выбрать поле"),
+    board_take_off = T("Take the board off", "Retirer le plateau", "Spielbrett ablegen", "Quitar el tablero",
+                       "Убрать поле"),
+    board_change  = T("Changing the board takes every card off.", "Changer de plateau retire toutes les cartes.",
+                      "Ein Wechsel des Spielbretts nimmt alle Karten herunter.",
+                      "Cambiar de tablero retira todas las cartas.", "Смена поля снимает все карты."),
+    remove_all    = T("Remove all", "Tout retirer", "Alle entfernen", "Retirar todo", "Убрать все"),
+    remove_all_ask = T("Take every card off the board?", "Retirer toutes les cartes du plateau ?",
+                       "Alle Karten vom Spielbrett nehmen?", "¿Retirar todas las cartas del tablero?",
+                       "Снять все карты с поля?"),
+    yes           = T("Remove", "Retirer", "Entfernen", "Retirar", "Убрать"),
+    cancel        = T("Cancel", "Annuler", "Abbrechen", "Cancelar", "Отмена"),
+    cell_empty    = T("Empty cell", "Case vide", "Leeres Feld", "Casilla vacía", "Пустая клетка"),
+    cell_hint     = T("Right-click: take the card off", "Clic droit : retirer la carte",
+                      "Rechtsklick: Karte entfernen", "Clic derecho: retirar la carta",
+                      "Правый щелчок: убрать карту"),
+    activation    = T("Activation: %d / 4", "Activation : %d / 4", "Aktivierung: %d / 4", "Activación: %d / 4",
+                      "Активация: %d / 4"),
+    inert         = T("Inert: no edge matches.", "Inerte : aucun bord ne se raccorde.",
+                      "Wirkungslos: keine Kante passt.", "Inerte: ningún borde coincide.",
+                      "Неактивна: ни один край не совпадает."),
+    highest_only  = T("Only the level reached applies.", "Seul le niveau atteint s'applique.",
+                      "Nur die erreichte Stufe wirkt.", "Solo se aplica el nivel alcanzado.",
+                      "Действует только достигнутый уровень."),
+    cumulative_long = T("Cumulative: a level reached keeps the ones below.",
+                        "Cumulatif : un niveau atteint conserve les précédents.",
+                        "Kumulativ: eine erreichte Stufe behält die darunter.",
+                        "Acumulativa: un nivel alcanzado conserva los anteriores.",
+                        "Накопительная: достигнутый уровень сохраняет предыдущие."),
+    presets       = T("Presets", "Presets", "Vorlagen", "Configuraciones", "Наборы"),
+    preset_save   = T("Save", "Enregistrer", "Speichern", "Guardar", "Сохранить"),
+    preset_load   = T("Click to load this preset", "Cliquez pour charger ce preset",
+                      "Klicken, um diese Vorlage zu laden", "Haz clic para cargar esta configuración",
+                      "Щелкните, чтобы загрузить набор"),
+    preset_delete = T("Delete this preset", "Supprimer ce preset", "Diese Vorlage löschen",
+                      "Borrar esta configuración", "Удалить набор"),
+    preset_none   = T("No preset saved.", "Aucun preset enregistré.", "Keine Vorlage gespeichert.",
+                      "Ninguna configuración guardada.", "Нет сохранённых наборов."),
+    hand          = T("Preview", "Aperçu", "Vorschau", "Vista previa", "Просмотр"),
+    hand_empty    = T("Hover a card", "Survolez une carte", "Mit der Maus über eine Karte fahren",
+                      "Pasa el ratón sobre una carta", "Наведите курсор на карту"),
+    effects       = T("Active effects", "Effets actifs", "Aktive Effekte", "Efectos activos", "Активные эффекты"),
+    effects_none  = T("No active effect.", "Aucun effet actif.", "Kein aktiver Effekt.", "Ningún efecto activo.",
+                      "Нет активных эффектов."),
+    effects_wheel = T("Mouse wheel: scroll the list.", "Molette de la souris : faire défiler la liste.",
+                      "Mausrad: Liste rollen.", "Rueda del ratón: desplazar la lista.",
+                      "Колесо мыши: прокрутка списка."),
+    effect_line   = T("%s — level %d: %s", "%s — niveau %d : %s", "%s — Stufe %d: %s", "%s — nivel %d: %s",
+                      "%s — уровень %d: %s"),
 }
 
 -- ---------------------------------------------------------------------------
@@ -215,6 +256,7 @@ end
 local WAITING = {}
 local Refresh
 local RefreshDeck
+local DrawDeckRows                             -- the deck's rows in view, defined after CardButton
 
 local function Prime(entry)
     if not S.ui or GetItemInfo(entry) or WAITING[entry] then return end
@@ -293,7 +335,46 @@ local SPELL_TEXT = {}
 -- la LANGUE DU CLIENT : ces mots-la doivent donc exister dans les deux, sans
 -- quoi rien ne se reconnait -- ni la mesure par niveau, ni les termes a
 -- separer, ni la clause de nuit.
-local MOTS = FR and {
+local MOTS_DE = {
+    par_niveau = "Pro Spielerstufe",
+    et         = "und",
+    mais       = "aber",
+    seuil      = " unter ",
+    nuit_seule = { ",%s*[Nn]ur nachts",
+                   "^[Nn]ur nachts%s*[,:]%s*",
+                   "^[Nn]achts%s*[,:]%s*" },
+    nuit_chiffre = { "%(([%-%+]?%d+)%%%s+nachts%)",
+                     ",%s*([%-%+]?%d+)%%%s+nachts" },
+    nuit_retrait = { "%s*%([%-%+]?%d+%%%s+nachts%)",
+                     ",%s*[%-%+]?%d+%%%s+nachts" },
+}
+local MOTS_ES = {
+    par_niveau = "Por nivel del jugador",
+    et         = "y",
+    mais       = "pero",
+    seuil      = " por debajo de ",
+    nuit_seule = { ",%s*[Ss]olo de noche",
+                   "^[Ss]olo de noche%s*[,:]%s*",
+                   "^[Dd]e noche%s*[,:]%s*" },
+    nuit_chiffre = { "%(([%-%+]?%d+)%%%s+de noche%)",
+                     ",%s*([%-%+]?%d+)%%%s+de noche" },
+    nuit_retrait = { "%s*%([%-%+]?%d+%%%s+de noche%)",
+                     ",%s*[%-%+]?%d+%%%s+de noche" },
+}
+local MOTS_RU = {
+    par_niveau = "За каждый уровень игрока",
+    et         = "и",
+    mais       = "но",
+    seuil      = " ниже ",
+    nuit_seule = { ",%s*только ночью",
+                   "^Только ночью%s*[,:]%s*",
+                   "^Ночью%s*[,:]%s*" },
+    nuit_chiffre = { "%(([%-%+]?%d+)%%%s+ночью%)",
+                     ",%s*([%-%+]?%d+)%%%s+ночью" },
+    nuit_retrait = { "%s*%([%-%+]?%d+%%%s+ночью%)",
+                     ",%s*[%-%+]?%d+%%%s+ночью" },
+}
+local MOTS = (LANG == "de" and MOTS_DE) or (LANG == "es" and MOTS_ES) or (LANG == "ru" and MOTS_RU) or FR and {
     par_niveau = "niveau du joueur",
     et         = "et",
     mais       = "mais",
@@ -358,15 +439,25 @@ local SHORT = {
     { "minute", "min" },
     { "pendant", "pdt" },
 }
+-- The words of a chance or of an internal cooldown, in the five languages.
+local CHANCE_WORDS = { "chance", "Chance", "ICD", "Abklingzeit", "probabilidad", "reutilización",
+                       "вероятност", "восстановлени" }
+local function ChanceOrCooldown(p)
+    for _, w in ipairs(CHANCE_WORDS) do
+        if p:find(w, 1, true) then return true end
+    end
+    return false
+end
+
 local function Pretty(text)
     if not text then return text end
     -- "(10% de chance, 8 sec d'ICD)", "(100% de chance)", "(3 sec d'ICD)": gone.
     text = text:gsub("%s*%b()", function(p)
-        if p:find("chance") or p:find("ICD") then return "" end
+        if ChanceOrCooldown(p) then return "" end
     end)
     -- ... and one never closed, to the end of the text.
     text = text:gsub("%s*%([^()]*$", function(p)
-        if p:find("chance") or p:find("ICD") then return "" end
+        if ChanceOrCooldown(p) then return "" end
     end)
     -- "5% de chance de" -> "une chance de"
     text = text:gsub("%d+[%.,]?%d*%s*%% de chances? (d[e'])", "une chance %1")
@@ -1346,10 +1437,17 @@ local function BuildDeck(ui)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(COLUMNS * (CELL + GAP), 10)
     scroll:SetScrollChild(content)
+    -- ONLY THE ROWS IN VIEW ARE DRAWN. A button per card (372 of them under
+    -- « All », each with its border, its icon and four edge boxes) made some
+    -- two thousand frames that the client placed again at every frame while
+    -- the window was dragged: the frame rate fell. The buttons of the rows in
+    -- view are now reused as the list scrolls.
+    scroll:HookScript("OnVerticalScroll", function() if DrawDeckRows then DrawDeckRows() end end)
+    scroll:HookScript("OnShow", function() if DrawDeckRows then DrawDeckRows() end end)
 
     ui.deck = panel
-    ui.tabs, ui.content = tabs, content
-    ui.tabButtons, ui.cardButtons = {}, {}
+    ui.tabs, ui.content, ui.deckScroll = tabs, content, scroll
+    ui.tabButtons, ui.cardButtons, ui.deckShown = {}, {}, {}
 end
 
 local function BuildBoard(ui)
@@ -1879,52 +1977,86 @@ local function CardButton(i)
     return b
 end
 
--- Every card of the tab shown -- every card at all under "All": known and
--- free, known and laid (dimmed), or not yet known (a question mark).
+-- One deck button dressed for its card: known and free, known and laid
+-- (dimmed), or not yet known (a question mark).
+local function DressCardButton(b, card)
+    b.card = card
+    if S.known[card.id] then
+        b.icon:SetTexture(CardIcon(card))
+        for e = 1, 4 do
+            b.edges[e]:SetText(card.edges[e])
+            b.boxes[e]:Show()
+        end
+        if S.pinned and S.pinned.id == card.id then
+            b:SetBackdropBorderColor(1, 0.82, 0)           -- gold: the hand is pinned here
+        else
+            b:SetBackdropBorderColor(QualityColor(card.quality))
+        end
+        if S.placed[card.id] then
+            b.icon:SetDesaturated(true)
+            b:SetAlpha(0.4)
+        else
+            b.icon:SetDesaturated(false)
+            b:SetAlpha(1)
+        end
+    else
+        -- Not known yet: the red question mark, as the game draws it.
+        b.icon:SetTexture(UNKNOWN_ICON)
+        b.icon:SetDesaturated(false)
+        b:SetBackdropBorderColor(0.6, 0.15, 0.15)
+        b:SetAlpha(1)
+        for e = 1, 4 do b.boxes[e]:Hide() end
+    end
+end
+
+-- The rows the deck's scroll shows, and one more for a row half in view: the
+-- buttons are taken in order and placed on the rows of their cards.
+DrawDeckRows = function()
+    local ui = S.ui
+    if not ui or not ui.deckScroll then return end
+    local list, step = ui.deckShown or {}, CELL + GAP
+    local first = math.max(0, floor((ui.deckScroll:GetVerticalScroll() or 0) / step))
+    local height = ui.deckScroll:GetHeight() or 0
+    local rows = (height >= step) and (math.ceil(height / step) + 1) or 12
+    local count = rows * COLUMNS
+    for i = 1, count do
+        local index = first * COLUMNS + i
+        local card = list[index]
+        if card then
+            local b = CardButton(i)
+            DressCardButton(b, card)
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", ((index - 1) % COLUMNS) * step, -floor((index - 1) / COLUMNS) * step)
+            b:Show()
+        elseif ui.cardButtons[i] then
+            ui.cardButtons[i].card = nil
+            ui.cardButtons[i]:Hide()
+        end
+    end
+    for i = count + 1, #ui.cardButtons do
+        ui.cardButtons[i].card = nil
+        ui.cardButtons[i]:Hide()
+    end
+end
+
+-- Every card of the tab shown -- every card at all under "All" -- listed;
+-- only the rows in view get buttons (DrawDeckRows).
 RefreshDeck = function()
     local ui = S.ui
     LayoutTabs()
-    for _, b in ipairs(ui.cardButtons) do b:Hide() end
-    local shown = 0
+    local list = {}
     for _, card in ipairs(S.cat.cards) do
         if (S.tab == ALL or card.tag == S.tab) and Matches(card) then
-            shown = shown + 1
-            local b = CardButton(shown)
-            b.card = card
-            if S.known[card.id] then
-                b.icon:SetTexture(CardIcon(card))
-                for e = 1, 4 do
-                    b.edges[e]:SetText(card.edges[e])
-                    b.boxes[e]:Show()
-                end
-                if S.pinned and S.pinned.id == card.id then
-                    b:SetBackdropBorderColor(1, 0.82, 0)           -- gold: the hand is pinned here
-                else
-                    b:SetBackdropBorderColor(QualityColor(card.quality))
-                end
-                if S.placed[card.id] then
-                    b.icon:SetDesaturated(true)
-                    b:SetAlpha(0.4)
-                else
-                    b.icon:SetDesaturated(false)
-                    b:SetAlpha(1)
-                end
-            else
-                -- Not known yet: the red question mark, as the game draws it.
-                b.icon:SetTexture(UNKNOWN_ICON)
-                b.icon:SetDesaturated(false)
-                b:SetBackdropBorderColor(0.6, 0.15, 0.15)
-                b:SetAlpha(1)
-                for e = 1, 4 do b.boxes[e]:Hide() end
-            end
-            local col, row = (shown - 1) % COLUMNS, floor((shown - 1) / COLUMNS)
-            b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", col * (CELL + GAP), -row * (CELL + GAP))
-            b:Show()
+            list[#list + 1] = card
         end
     end
-    local rows = shown > 0 and (floor((shown - 1) / COLUMNS) + 1) or 0
+    ui.deckShown = list
+    local rows = #list > 0 and (floor((#list - 1) / COLUMNS) + 1) or 0
     ui.content:SetHeight(math.max(rows * (CELL + GAP), 10))
+    -- A shorter list leaves the scroll beyond its end: back within it.
+    local range = math.max(0, rows * (CELL + GAP) - (ui.deckScroll:GetHeight() or 0))
+    if (ui.deckScroll:GetVerticalScroll() or 0) > range then ui.deckScroll:SetVerticalScroll(range) end
+    DrawDeckRows()
 end
 
 TogglePin = function(card)
@@ -2685,7 +2817,9 @@ end
 local function BleedText(part)
     local base, pos, neg = UnitAttackPower("player")
     local ap = (base or 0) + (pos or 0) + (neg or 0)
-    return fmt(FR and "Saigne : %d dégâts toutes les 2 sec" or "Bleeds: %d damage every 2 sec",
+    return fmt(T("Bleeds: %d damage every 2 sec", "Saigne : %d dégâts toutes les 2 sec",
+                 "Blutet: %d Schaden alle 2 Sek.", "Sangra: %d de daño cada 2 s",
+                 "Кровотечение: %d ед. урона каждые 2 сек."),
                math.floor(ap * part / 100))
 end
 
@@ -2753,12 +2887,12 @@ if not STELLAR_TAROT_PROFIT_HOOKED then
     STELLAR_TAROT_PROFIT_HOOKED = true
     local gains = {}                       -- nom de carte -> cuivre
 
-    local PIECES = FR and { { 10000, "pièce d'or", "pièces d'or" },
-                            { 100, "pièce d'argent", "pièces d'argent" },
-                            { 1, "pièce de cuivre", "pièces de cuivre" } }
-                     or { { 10000, "gold coin", "gold coins" },
-                          { 100, "silver coin", "silver coins" },
-                          { 1, "copper coin", "copper coins" } }
+    local PIECES = { { 10000, T("gold coin", "pièce d'or", "Goldmünze", "moneda de oro", "золотая"),
+                              T("gold coins", "pièces d'or", "Goldmünzen", "monedas de oro", "золотых") },
+                     { 100, T("silver coin", "pièce d'argent", "Silbermünze", "moneda de plata", "серебряная"),
+                            T("silver coins", "pièces d'argent", "Silbermünzen", "monedas de plata", "серебряных") },
+                     { 1, T("copper coin", "pièce de cuivre", "Kupfermünze", "moneda de cobre", "медная"),
+                          T("copper coins", "pièces de cuivre", "Kupfermünzen", "monedas de cobre", "медных") } }
 
     -- « 15 pièces d'argent », « 2 pièces d'or et 15 pièces d'argent » : les
     -- rangs nuls se taisent, et le dernier se joint par « et ».
@@ -2774,7 +2908,7 @@ if not STELLAR_TAROT_PROFIT_HOOKED then
         if #bouts == 0 then return nil end
         if #bouts == 1 then return bouts[1] end
         local dernier = table.remove(bouts)
-        return table.concat(bouts, ", ") .. (FR and " et " or " and ") .. dernier
+        return table.concat(bouts, ", ") .. T(" and ", " et ", " und ", " y ", " и ") .. dernier
     end
 
     local function Nom(spellId)
@@ -3008,8 +3142,11 @@ end
                 local _, lien = GetItemInfo(tonumber(objet or 0))
                 if nom and lien then
                     DEFAULT_CHAT_FRAME:AddMessage(
-                        FR and ("[" .. nom .. "] Le marchand était très intéressé par " .. lien .. " !")
-                            or ("[" .. nom .. "] The merchant was very interested in " .. lien .. "!"),
+                        "[" .. nom .. "] " .. fmt(T("The merchant was very interested in %s!",
+                                                    "Le marchand était très intéressé par %s !",
+                                                    "Der Händler war sehr an %s interessiert!",
+                                                    "¡Al mercader le interesó mucho %s!",
+                                                    "Торговец очень заинтересовался: %s!"), lien),
                         1.0, 0.82, 0.0)
                 end
                 return
@@ -3023,8 +3160,11 @@ end
                 local _, lien = GetItemInfo(tonumber(objet or 0))
                 if nom and lien then
                     DEFAULT_CHAT_FRAME:AddMessage(
-                        FR and ("[" .. nom .. "] Vous venez de recevoir " .. lien .. " en plus, gratuitement !")
-                            or ("[" .. nom .. "] You just got a little extra of " .. lien .. " for free!"),
+                        "[" .. nom .. "] " .. fmt(T("You just got a little extra of %s for free!",
+                                                    "Vous venez de recevoir %s en plus, gratuitement !",
+                                                    "Ihr habt gerade %s zusätzlich gratis erhalten!",
+                                                    "¡Acabas de recibir %s de más, gratis!",
+                                                    "Вы бесплатно получили ещё: %s!"), lien),
                         1.0, 0.82, 0.0)
                 end
                 return
@@ -3033,8 +3173,11 @@ end
                 local nom = Nom(tonumber(message))
                 if nom then
                     DEFAULT_CHAT_FRAME:AddMessage(
-                        FR and ("[" .. nom .. "] Le forgeron vous a offert vos réparations !")
-                            or ("[" .. nom .. "] The blacksmith repaired your gear for free!"),
+                        "[" .. nom .. "] " .. T("The blacksmith repaired your gear for free!",
+                                                "Le forgeron vous a offert vos réparations !",
+                                                "Der Schmied hat Eure Ausrüstung kostenlos repariert!",
+                                                "¡El herrero ha reparado tu equipo gratis!",
+                                                "Кузнец бесплатно починил ваше снаряжение!"),
                         1.0, 0.82, 0.0)
                 end
                 return
@@ -3051,8 +3194,9 @@ end
             local somme = Somme(cuivre)
             if somme then
                 DEFAULT_CHAT_FRAME:AddMessage(
-                    FR and ("[" .. nom .. "] Vous avez gagné " .. somme .. " de bénéfice.")
-                        or ("[" .. nom .. "] You have gained " .. somme .. " in profit."),
+                    "[" .. nom .. "] " .. fmt(T("You have gained %s in profit.", "Vous avez gagné %s de bénéfice.",
+                                                "Ihr habt %s Gewinn gemacht.", "Has obtenido %s de beneficio.",
+                                                "Ваша прибыль: %s."), somme),
                     1.0, 0.82, 0.0)
             end
         end

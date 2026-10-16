@@ -17,7 +17,7 @@
 DROP TEMPORARY TABLE IF EXISTS `stellar_tarot_clone`;
 CREATE TEMPORARY TABLE `stellar_tarot_clone` AS
     SELECT * FROM `creature_template` WHERE `entry` = 113;
-UPDATE `stellar_tarot_clone` SET `entry` = 87650, `name` = 'Sanglier du Tarot',
+UPDATE `stellar_tarot_clone` SET `entry` = 87650, `name` = 'Tarot Boar',
     `subname` = '', `faction` = 35, `npcflag` = 0, `unit_flags` = 0, `unit_flags2` = 0,
     `AIName` = '', `ScriptName` = 'npc_stellar_tarot_guardian',
     `minlevel` = 1, `maxlevel` = 1, `RegenHealth` = 0, `flags_extra` = 0;
@@ -27,7 +27,7 @@ INSERT INTO `creature_template` SELECT * FROM `stellar_tarot_clone`;
 DROP TEMPORARY TABLE IF EXISTS `stellar_tarot_clone`;
 CREATE TEMPORARY TABLE `stellar_tarot_clone` AS
     SELECT * FROM `creature_template` WHERE `entry` = 113;
-UPDATE `stellar_tarot_clone` SET `entry` = 87651, `name` = 'Double du Tarot',
+UPDATE `stellar_tarot_clone` SET `entry` = 87651, `name` = 'Tarot Double',
     `subname` = '', `faction` = 35, `npcflag` = 0, `unit_flags` = 0, `unit_flags2` = 0,
     `AIName` = '', `ScriptName` = 'npc_stellar_tarot_guardian',
     `minlevel` = 1, `maxlevel` = 1, `RegenHealth` = 0, `flags_extra` = 0;
@@ -45,3 +45,17 @@ INSERT INTO `creature_template_model`
     (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`)
 SELECT 87651, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, 0
     FROM `creature_template_model` WHERE `CreatureID` = 113;
+
+-- THE NAMES IN THE CLIENT'S LANGUAGES (English above, in `creature_template`).
+DELETE FROM `creature_template_locale` WHERE `entry` IN (87650, 87651);
+INSERT INTO `creature_template_locale` (`entry`, `locale`, `Name`, `Title`, `VerifiedBuild`) VALUES
+(87650, 'frFR', 'Sanglier du Tarot', '', 0),
+(87650, 'deDE', 'Tarotkeiler', '', 0),
+(87650, 'esES', 'Jabalí del Tarot', '', 0),
+(87650, 'esMX', 'Jabalí del Tarot', '', 0),
+(87650, 'ruRU', 'Вепрь Таро', '', 0),
+(87651, 'frFR', 'Double du Tarot', '', 0),
+(87651, 'deDE', 'Tarotdoppelgänger', '', 0),
+(87651, 'esES', 'Doble del Tarot', '', 0),
+(87651, 'esMX', 'Doble del Tarot', '', 0),
+(87651, 'ruRU', 'Двойник Таро', '', 0);

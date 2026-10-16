@@ -76,12 +76,14 @@ end
 -- What the bench shows as the result: a draw, so no particular card would
 -- be honest -- the type's icon under the game's red question mark (the
 -- module's own textures, data/art/Interface/mod-Tarot/Icons), and a word.
-local LOCALE_FRFR = 2
-local function Draw(icon, kind_en, kind_fr)
+-- `texts`: { enUS, frFR, deDE, esES, ruRU }, read in the player's language
+-- (esMX reads Spanish; any other, English).
+local DB_LOCALES = { [2] = "frFR", [3] = "deDE", [6] = "esES", [7] = "esES", [8] = "ruRU" }
+local function Draw(icon, texts)
     return function(player)
-        local fr = player:GetDbLocaleIndex() == LOCALE_FRFR
+        local locale = DB_LOCALES[player:GetDbLocaleIndex()] or "enUS"
         return { icon = "Interface\\mod-Tarot\\Icons\\" .. icon,
-                 text = fr and kind_fr or kind_en }
+                 text = texts[locale] or texts.enUS }
     end
 end
 
@@ -91,20 +93,29 @@ Workbench.Register({
         return cards[entry] or boards[entry] or false
     end,
     kinds = {
-        { key = "card", name = { enUS = "Cards", frFR = "Cartes" },
+        { key = "card", name = { enUS = "Cards", frFR = "Cartes", deDE = "Karten", esES = "Cartas",
+                                 esMX = "Cartas", ruRU = "Карты" },
           Of = function(entry) return cards[entry] == true end },
-        { key = "board", name = { enUS = "Boards", frFR = "Plateaux" },
+        { key = "board", name = { enUS = "Boards", frFR = "Plateaux", deDE = "Spielbretter", esES = "Tableros",
+                                  esMX = "Tableros", ruRU = "Поля" },
           Of = function(entry) return boards[entry] == true end },
     },
     recipes = {
         {
             key = "fuse_cards", slots = 3,
             name = { enUS = "Fusion: three cards, any of them, become one drawn at random.",
-                     frFR = "Fusion : trois cartes, quelles qu'elles soient, deviennent une carte tirée au hasard." },
+                     frFR = "Fusion : trois cartes, quelles qu'elles soient, deviennent une carte tirée au hasard.",
+                     deDE = "Fusion: drei beliebige Karten werden zu einer zufällig gezogenen Karte.",
+                     esES = "Fusión: tres cartas cualesquiera se convierten en una carta elegida al azar.",
+                     esMX = "Fusión: tres cartas cualesquiera se convierten en una carta elegida al azar.",
+                     ruRU = "Слияние: три любые карты превращаются в одну случайную карту." },
             Fits = function(_, placed, entry) return cards[entry] == true and OnlyCards(placed) end,
             Accepts = function(_, entries) return AllCards(entries) end,
-            Preview = Draw("random_card", "A card drawn at random from the whole catalogue.",
-                           "Une carte tirée au hasard dans tout le catalogue."),
+            Preview = Draw("random_card", { enUS = "A card drawn at random from the whole catalogue.",
+                                            frFR = "Une carte tirée au hasard dans tout le catalogue.",
+                                            deDE = "Eine zufällig gezogene Karte aus dem gesamten Katalog.",
+                                            esES = "Una carta elegida al azar de todo el catálogo.",
+                                            ruRU = "Случайная карта из всего каталога." }),
             Run = function(player, entries)
                 player:RunCommand(fmt("tarot fuse %d %d %d", entries[1], entries[2], entries[3]))
             end,
@@ -112,11 +123,18 @@ Workbench.Register({
         {
             key = "fuse_boards", slots = 3,
             name = { enUS = "Fusion: three boards, any of them, become one drawn at random.",
-                     frFR = "Fusion : trois plateaux, quels qu'ils soient, deviennent un plateau tiré au hasard." },
+                     frFR = "Fusion : trois plateaux, quels qu'ils soient, deviennent un plateau tiré au hasard.",
+                     deDE = "Fusion: drei beliebige Spielbretter werden zu einem zufällig gezogenen Spielbrett.",
+                     esES = "Fusión: tres tableros cualesquiera se convierten en un tablero elegido al azar.",
+                     esMX = "Fusión: tres tableros cualesquiera se convierten en un tablero elegido al azar.",
+                     ruRU = "Слияние: три любых поля превращаются в одно случайное поле." },
             Fits = function(_, placed, entry) return boards[entry] == true and OnlyBoards(placed) end,
             Accepts = function(_, entries) return AllBoards(entries) end,
-            Preview = Draw("random_board", "A board drawn at random from the whole catalogue.",
-                           "Un plateau tiré au hasard dans tout le catalogue."),
+            Preview = Draw("random_board", { enUS = "A board drawn at random from the whole catalogue.",
+                                             frFR = "Un plateau tiré au hasard dans tout le catalogue.",
+                                             deDE = "Ein zufällig gezogenes Spielbrett aus dem gesamten Katalog.",
+                                             esES = "Un tablero elegido al azar de todo el catálogo.",
+                                             ruRU = "Случайное поле из всего каталога." }),
             Run = function(player, entries)
                 player:RunCommand(fmt("tarot fuse %d %d %d", entries[1], entries[2], entries[3]))
             end,

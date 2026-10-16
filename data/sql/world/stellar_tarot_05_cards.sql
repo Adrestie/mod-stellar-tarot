@@ -26,7 +26,27 @@ INSERT INTO `mod_stellar_tarot_tag_locale` (`tag_id`, `locale`, `name`) VALUES
 (2, 'frFR', 'Magie'),
 (3, 'frFR', 'Richesse'),
 (4, 'frFR', 'Folie'),
-(5, 'frFR', 'Divers');
+(5, 'frFR', 'Divers'),
+(1, 'deDE', 'Körperlich'),
+(1, 'esES', 'Físico'),
+(1, 'esMX', 'Físico'),
+(1, 'ruRU', 'Физическое'),
+(2, 'deDE', 'Magie'),
+(2, 'esES', 'Magia'),
+(2, 'esMX', 'Magia'),
+(2, 'ruRU', 'Магия'),
+(3, 'deDE', 'Reichtum'),
+(3, 'esES', 'Riqueza'),
+(3, 'esMX', 'Riqueza'),
+(3, 'ruRU', 'Богатство'),
+(4, 'deDE', 'Wahnsinn'),
+(4, 'esES', 'Locura'),
+(4, 'esMX', 'Locura'),
+(4, 'ruRU', 'Безумие'),
+(5, 'deDE', 'Verschiedenes'),
+(5, 'esES', 'Varios'),
+(5, 'esMX', 'Varios'),
+(5, 'ruRU', 'Разное');
 
 INSERT INTO `mod_stellar_tarot_card`
   (`card_id`, `name`, `edge_top`, `edge_right`, `edge_bottom`, `edge_left`, `tag_id`, `cumulative`,
