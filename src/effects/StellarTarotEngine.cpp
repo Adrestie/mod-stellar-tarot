@@ -633,6 +633,27 @@ namespace
     // qui en tire une au sort -- car le `EffectMiscValue` d'un sort, QUELLE
     // statistique il majore, est ecrit dans le DBC et ne se choisit pas a la
     // pose. Deplacee ici telle quelle depuis `GemPct`, sans un mot de change.
+    // CE QUE LE COEUR FAIT D'UN POINT POSE PAR `Poser` : une statistique
+    // principale d'objet passe par les pourcentages du joueur (talents, auras,
+    // modules), BASE_PCT puis TOTAL_PCT. Une part calculee sur la statistique
+    // TOTALE doit donc en etre divisee, sans quoi elle est multipliee deux fois.
+    float MultiplicateurPose(Player* player, uint32 stat)
+    {
+        int32 index = -1;
+        switch (stat)
+        {
+            case ITEM_MOD_STRENGTH: index = STAT_STRENGTH; break;
+            case ITEM_MOD_AGILITY: index = STAT_AGILITY; break;
+            case ITEM_MOD_STAMINA: index = STAT_STAMINA; break;
+            case ITEM_MOD_INTELLECT: index = STAT_INTELLECT; break;
+            case ITEM_MOD_SPIRIT: index = STAT_SPIRIT; break;
+            default: return 1.0f;
+        }
+        UnitMods const mod = UnitMods(UNIT_MOD_STAT_START + index);
+        float const m = player->GetPctModifierValue(mod, BASE_PCT) * player->GetPctModifierValue(mod, TOTAL_PCT);
+        return m > 0.0f ? m : 1.0f;
+    }
+
     void Poser(Player* player, uint32 stat, int32 val, bool apply)
     {
         float const f = float(val);
@@ -5040,8 +5061,9 @@ namespace
                 int32 const pct = (i == 0) ? (_retourne ? _apres : haut) : -bas;
                 // What the card already gives is not part of what the player carries.
                 auto const deja = _donne.find(_choix[i].mod);
-                int32 const porte = Valeur(player, _choix[i]) - (deja == _donne.end() ? 0 : deja->second);
-                int32 const val = int32(std::lround(double(porte) * pct / 100.0));
+                float const m = MultiplicateurPose(player, _choix[i].mod);
+                double const porte = Valeur(player, _choix[i]) - (deja == _donne.end() ? 0 : deja->second) * m;
+                int32 const val = int32(std::lround(porte * pct / 100.0 / m));
                 if (val)
                     veut[_choix[i].mod] = val;
             }
@@ -5160,8 +5182,9 @@ namespace
                 {
                     // What the card already gives is not part of what the player carries.
                     auto const deja = _donne.find(mod);
-                    int32 const porte = int32(player->GetStat(Stats(stat))) - (deja == _donne.end() ? 0 : deja->second);
-                    int32 const val = int32(std::lround(double(porte) * pct / 100.0));
+                    float const m = MultiplicateurPose(player, mod);
+                    double const porte = player->GetStat(Stats(stat)) - (deja == _donne.end() ? 0 : deja->second) * m;
+                    int32 const val = int32(std::lround(porte * pct / 100.0 / m));
                     if (val)
                         veut[mod] = val;
                 }
