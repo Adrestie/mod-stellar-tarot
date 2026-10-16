@@ -74,6 +74,14 @@ constexpr uint32 STELLAR_TAROT_SPELL_IMMUNE_CONTROL = 88809;
 // DISPARAITRE : l'invisibilite que le coeur porte, pour le temps qu'une
 // ligne lui donne.
 constexpr uint32 STELLAR_TAROT_SPELL_INVISIBLE = 88810;
+// LA GARDE SUR UN ALLIE : une aura cachee que le porteur d'une ligne `ally_crit`
+// pose sur les membres de son groupe. Le systeme de procs du coeur la reveille
+// quand l'un d'eux subit un critique (spell_proc, HitMask critique), et son
+// script previent la ligne du porteur -- son LANCEUR.
+constexpr uint32 STELLAR_TAROT_SPELL_ALLY_WATCH = 88811;
+// LA FRENESIE : le revers visible de la famille `frenzy`, le temps ou le joueur
+// frappe tout ce qui l'entoure.
+constexpr uint32 STELLAR_TAROT_SPELL_FRENZY = 88812;
 constexpr uint32 STELLAR_TAROT_SPELL_BURN = 88795;              // fire, over time
 constexpr uint32 STELLAR_TAROT_SPELL_TAKEN_MORE = 88798;        // a drawback: the player takes more damage
 constexpr uint32 STELLAR_TAROT_SPELL_WAND_SHOT = 88794;         // the second shot a card grants, a wand's own

@@ -155,6 +155,8 @@ public:
     // CE QU'UN ALLIE SUBIT : un membre du groupe vient d'encaisser. Le coeur
     // ne le dit qu'a lui ; le module le porte a ceux qui veillent.
     virtual void OnAllyDamaged(Player* /*player*/, Player* /*allie*/, uint32& /*damage*/) { }
+    // UN ALLIE SOUS LA GARDE DU JOUEUR (aura 88811) a subi un critique.
+    virtual void OnAllyCrit(Player* /*player*/, Unit* /*ally*/, uint32 /*amount*/) { }
     // UN OBJET QUI ENTRE DANS LES SACS, quelle qu'en soit la provenance.
     virtual void OnItemGained(Player* /*player*/, Item* /*item*/, uint32 /*count*/) { }
     // LES CROCHETS QUE LE COEUR APPELLE BEAUCOUP : une ligne qui les veut le

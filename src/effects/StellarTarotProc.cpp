@@ -44,6 +44,7 @@
  */
 
 #include "Log.h"
+#include "ObjectAccessor.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "SpellAuraEffects.h"
@@ -114,7 +115,33 @@ class spell_stellar_tarot_line : public AuraScript
     }
 };
 
+// LA GARDE SUR UN ALLIE (88811). Elle est portee par l'ALLIE et lancee par le
+// joueur dont la ligne `ally_crit` veille : le coeur la reveille sur un critique
+// subi (spell_proc, HitMask critique), et c'est le LANCEUR qu'on previent.
+class spell_stellar_tarot_ally_watch : public AuraScript
+{
+    PrepareAuraScript(spell_stellar_tarot_ally_watch);
+
+    void HandleProc(ProcEventInfo& eventInfo)
+    {
+        Unit* const ally = GetUnitOwner();
+        Player* const holder = ObjectAccessor::FindPlayer(GetCasterGUID());
+        if (!ally || !holder || !holder->IsInMap(ally))
+            return;
+        uint32 montant = 0;
+        if (DamageInfo* const degats = eventInfo.GetDamageInfo())
+            montant = degats->GetDamage();
+        StellarTarotEffects::OnAllyCrit(holder, ally, montant);
+    }
+
+    void Register() override
+    {
+        OnProc += AuraProcFn(spell_stellar_tarot_ally_watch::HandleProc);
+    }
+};
+
 void AddSC_stellar_tarot_proc()
 {
     RegisterSpellScript(spell_stellar_tarot_line);
+    RegisterSpellScript(spell_stellar_tarot_ally_watch);
 }

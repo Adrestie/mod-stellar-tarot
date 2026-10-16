@@ -210,6 +210,9 @@ namespace StellarTarotEffects
     // LE COEUR A FAIT PARTIR UNE AURA DU MODULE. Celle d'une ligne reveille la
     // ligne ; celle d'un TEMOIN ne fait que compter l'occasion.
     void OnProc(Player* player, uint32 auraId, Unit* other, uint32 amount);
+    // LA GARDE D'UN ALLIE est partie : il a subi un critique. `holder` est
+    // celui qui l'a posee ; ses lignes `ally_crit` y repondent.
+    void OnAllyCrit(Player* holder, Unit* ally, uint32 amount);
     // L'aura d'un NIVEAU qui part est une promesse consommee : le coeur l'a
     // retiree au premier coup qui repondait, et le prix est du.
     void OnPromiseSpent(Player* player, uint32 spellId);

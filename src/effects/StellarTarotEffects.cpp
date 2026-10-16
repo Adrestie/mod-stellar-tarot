@@ -1048,6 +1048,13 @@ bool StellarTarotEffects::MesureAuJournal(Player* player, bool force)
     return true;
 }
 
+void StellarTarotEffects::OnAllyCrit(Player* holder, Unit* ally, uint32 amount)
+{
+    if (!holder || !ally || !holder->IsInWorld())
+        return;
+    Each(holder, [&](StellarTarotScript& s) { s.OnAllyCrit(holder, ally, amount); });
+}
+
 void StellarTarotEffects::OnProc(Player* player, uint32 auraId, Unit* other, uint32 amount)
 {
     if (!player)

@@ -92,4 +92,5 @@ INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 (89350, 'spell_stellar_tarot_line'),
 (89362, 'spell_stellar_tarot_line'),
 (89474, 'spell_stellar_tarot_line'),
-(89526, 'spell_stellar_tarot_line');
+(89526, 'spell_stellar_tarot_line'),
+(88811, 'spell_stellar_tarot_ally_watch');

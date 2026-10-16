@@ -2166,6 +2166,13 @@ namespace
                     return false;
                 }
             }
+            // `ally_crit:<metres>` : un membre du groupe (le joueur compris, comme
+            // partout dans le moteur) subit un critique a cette distance.
+            if (_event == "ally_crit")
+            {
+                known = true;
+                if (!r.Int(1, 100, _eventN)) { error = "ally_crit expects the yards"; return false; }
+            }
             if (_event == "spell_cast_row")
             {
                 known = true;
@@ -2578,6 +2585,7 @@ namespace
             if (_signSpell) RemoveOwned(player, uint32(_signSpell));
             if (_thenSpell) RemoveOwned(player, uint32(_thenSpell));
             if (_trigger) RemoveOwned(player, uint32(_trigger));
+            if (_event == "ally_crit") Delaisser(player);
         }
 
         // UNE DEPENSE : le compte des secondes repart de zero.
@@ -2604,6 +2612,42 @@ namespace
                 return;
             if (gFeverSpells.count(spellId))
                 Fire(player, nullptr, 0);
+        }
+
+        // UN MEMBRE DU GROUPE A SUBI UN CRITIQUE. Le coeur ne le dit qu'a une
+        // aura que porte la victime : la ligne pose donc, a chaque battement,
+        // une garde cachee (88811) sur chaque membre a portee -- breve, pour
+        // qu'un membre parti la perde seul -- et le script de la garde
+        // previent le joueur qui l'a posee. La chance et le delai restent
+        // ceux de la ligne (Fire).
+        void OnAllyCrit(Player* player, Unit* ally, uint32 amount) override
+        {
+            if (_event != "ally_crit" || !ally || !ally->IsAlive() || !_veilles.count(ally->GetGUID()))
+                return;
+            if (!player->IsWithinDistInMap(ally, float(_eventN)))
+                return;
+            Fire(player, ally, amount);
+        }
+        void Veiller(Player* player)
+        {
+            std::set<ObjectGuid> voulus;
+            for (Player* membre : GroupAround(player, float(_eventN)))
+            {
+                voulus.insert(membre->GetGUID());
+                Put(player, membre, STELLAR_TAROT_SPELL_ALLY_WATCH, 5);
+            }
+            for (ObjectGuid const& qui : _veilles)
+                if (!voulus.count(qui))
+                    if (Unit* u = ObjectAccessor::GetUnit(*player, qui))
+                        u->RemoveAura(STELLAR_TAROT_SPELL_ALLY_WATCH, player->GetGUID());
+            _veilles = voulus;
+        }
+        void Delaisser(Player* player)
+        {
+            for (ObjectGuid const& qui : _veilles)
+                if (Unit* u = ObjectAccessor::GetUnit(*player, qui))
+                    u->RemoveAura(STELLAR_TAROT_SPELL_ALLY_WATCH, player->GetGUID());
+            _veilles.clear();
         }
 
         // LE FAMILIER A FRAPPE : la ligne du maitre y repond, le coup lui etant
@@ -2702,6 +2746,8 @@ namespace
                                                                                    : uint32(_eventN));
                 if (++_elapsed >= chaque) { _elapsed = 0; Fire(player, nullptr, 0); }
             }
+            else if (_event == "ally_crit")
+                Veiller(player);
             // UN ALLIE EN DANGER : on regarde alentour a chaque seconde. Le
             // delai de la ligne fait le reste -- sans lui, la sentinelle
             // repondrait a chaque battement tant que l'allie reste bas.
@@ -4576,6 +4622,7 @@ namespace
         // LE COMPTE DES CIBLES D'UN SORT : lesquelles, pour quel sort, et
         // depuis quand -- le coeur ne tient rien de tout cela.
         std::set<ObjectGuid> _touches;
+        std::set<ObjectGuid> _veilles;  // ally_crit : ceux qui portent la garde du joueur
         uint32 _sortTouche = 0, _depuisTouche = 0;
         bool _ditTouche = false;
         uint32 _venduEntry = 0;          // l'objet vendu, retenu jusqu'a l'arrivee de l'argent
@@ -5199,6 +5246,81 @@ namespace
 
         int32 _pct = 0, _tranche = 0, _plafond = 0;
         std::map<uint32, int32> _donne;
+    };
+
+    // =========================================================================
+    // frenzy:<sort guette>:<cumuls>:<secondes>:<metres>
+    //     LA FRENESIE, LE REVERS QUI SE MERITE. Quand l'aura guettee -- celle
+    //     qu'un autre niveau de la carte empile -- atteint ses cumuls, le
+    //     joueur perd la main sur ses coups : le temps dit, il frappe chaque
+    //     seconde, de l'arme qu'il tient, TOUT ce qui vit a portee -- ennemis,
+    //     creatures amies, membres de son groupe et son familier. Seul ce qui
+    //     ne peut pas etre attaque (marchands, PNJ proteges) est epargne.
+    //     Les cumuls sont consommes : il faut les regagner pour que la crise
+    //     revienne. Un revers visible le dit (88812).
+    // =========================================================================
+    class Frenzy : public StellarTarotScript
+    {
+    public:
+        bool Parse(std::vector<std::string> const& params, std::string& error) override
+        {
+            Reader r(params);
+            int32 guette = 0;
+            if (!r.Int(STELLAR_TAROT_SPELL_FIRST, STELLAR_TAROT_SPELL_LAST, guette) || !r.Int(2, 100, _cumuls)
+                || !r.Int(1, 60, _secondes) || !r.Int(1, 30, _metres) || !r.End())
+                return (error = "frenzy expects the watched spell, its stacks, the seconds and the yards", false);
+            _guette = uint32(guette);
+            return true;
+        }
+        void Apply(Player* /*player*/) override { _reste = 0; }
+        void Remove(Player* player) override
+        {
+            _reste = 0;
+            RemoveOwned(player, STELLAR_TAROT_SPELL_FRENZY);
+        }
+        void OnTick(Player* player) override
+        {
+            if (_reste > 0)
+            {
+                --_reste;
+                Frapper(player);
+                return;
+            }
+            Aura* const pile = player->GetAura(_guette, player->GetGUID());
+            if (!pile || pile->GetStackAmount() < uint8(_cumuls) || !player->IsAlive())
+                return;
+            player->RemoveAura(_guette, player->GetGUID());
+            Put(player, player, STELLAR_TAROT_SPELL_FRENZY, _secondes);
+            StellarTarotEffects::Probe(player, _spellId, "frenzy for " + std::to_string(_secondes) + " s");
+            _reste = _secondes - 1;
+            Frapper(player);
+        }
+
+    private:
+        void Frapper(Player* player)
+        {
+            if (!player->IsAlive() || player->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_CONFUSED | UNIT_STATE_FLEEING))
+                return;
+            std::list<Unit*> autour;
+            Acore::AnyUnitInObjectRangeCheck check(player, float(_metres));
+            Acore::UnitListSearcher<Acore::AnyUnitInObjectRangeCheck> searcher(player, autour, check);
+            Cell::VisitObjects(player, searcher, float(_metres));
+            uint32 frappes = 0;
+            for (Unit* u : autour)
+            {
+                if (!u || u == player || !u->IsAlive() || !u->IsInWorld() || u->IsTotem())
+                    continue;
+                if (u->HasUnitFlag(UNIT_FLAG_NON_ATTACKABLE) || u->HasUnitFlag(UNIT_FLAG_NOT_SELECTABLE)
+                    || u->IsImmuneToPC() || !player->CanSeeOrDetect(u))
+                    continue;
+                player->AttackerStateUpdate(u, BASE_ATTACK, true, true);
+                ++frappes;
+            }
+            StellarTarotEffects::Probe(player, _spellId, "frenzy struck " + std::to_string(frappes));
+        }
+
+        uint32 _guette = 0;
+        int32 _cumuls = 10, _secondes = 5, _metres = 5, _reste = 0;
     };
 
     // =========================================================================
@@ -9872,6 +9994,7 @@ void StellarTarotScripts::RegisterEngine()
     Register("gempct", [] { return std::make_unique<GemPct>(); });
     Register("cheatdeath", [] { return std::make_unique<CheatDeath>(); });
     Register("goldstat", [] { return std::make_unique<GoldStat>(); });
+    Register("frenzy", [] { return std::make_unique<Frenzy>(); });
     Register("randstat", [] { return std::make_unique<RandStat>(); });
     Register("stat", [] { return std::make_unique<NightStat>(); });
     Register("costmod", [] { return std::make_unique<CostMod>(); });
