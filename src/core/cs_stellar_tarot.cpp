@@ -869,6 +869,9 @@ public:
         if (!creature)
             return nullptr;
         creature->SetFaction(hostile ? 14 : player->GetFaction());
+        // A PvP player may help a creature only if it is PvP too (Unit::_IsValidAssistTarget).
+        if (!hostile)
+            creature->SetPvP(true);
         // The player's own level: a lower one misses its spells on him.
         creature->SetLevel(player->GetLevel());
         creature->SetReactState(REACT_PASSIVE);
@@ -1624,8 +1627,9 @@ public:
                  tenths(player->GetFloatValue(PLAYER_BLOCK_PERCENTAGE)) +
                  " | scrit " + spellCrit +
                  " | haste " + pct(player->GetFloatValue(UNIT_MOD_CAST_SPEED)) + "," +
-                 std::to_string(player->GetAttackTime(BASE_ATTACK)) + "," +
-                 std::to_string(player->GetAttackTime(RANGED_ATTACK)) +
+                 // The delay as the haste left it: GetAttackTime() divides the modifier back out.
+                 std::to_string(uint32(player->GetFloatValue(UNIT_FIELD_BASEATTACKTIME + BASE_ATTACK))) + "," +
+                 std::to_string(uint32(player->GetFloatValue(UNIT_FIELD_RANGEDATTACKTIME))) +
                  " | regen " + tenths(player->GetFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER + AsUnderlyingType(POWER_MANA))) + "," +
                  tenths(player->GetFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER + AsUnderlyingType(POWER_MANA))) +
                  " | gain " + std::to_string(player->GetTotalAuraModifier(SPELL_AURA_MOD_XP_PCT)) + "," +
