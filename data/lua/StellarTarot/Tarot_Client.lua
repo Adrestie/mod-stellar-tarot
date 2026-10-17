@@ -626,7 +626,9 @@ local function PreviewFrame()
     frame.size = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.size:SetPoint("TOPLEFT", frame.name, "BOTTOMLEFT", 0, -2)
     frame.grid = CreateFrame("Frame", nil, frame)
-    frame.grid:SetPoint("TOP", frame.size, "BOTTOM", 0, -6)
+    -- Under the texts, on the same left margin: centred on the short size line,
+    -- a large board stuck out on the left of the frame.
+    frame.grid:SetPoint("TOPLEFT", frame.size, "BOTTOMLEFT", 0, -6)
     frame.cells, frame.rims = {}, { left = {}, right = {}, top = {}, bottom = {} }
     for i = 1, 25 do
         local cell = frame.grid:CreateTexture(nil, "ARTWORK")
