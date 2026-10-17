@@ -94,6 +94,7 @@ StellarTarot.Loot.WotlkHeroicTrash = cards[0]:1:2
 StellarTarot.Loot.VanillaRaidTrash = cards[0]:1:2
 StellarTarot.Loot.BcRaidTrash = cards[0]:1:2
 StellarTarot.Loot.WotlkRaidTrash = cards[0]:1:2
+StellarTarot.Loot.IcecrownRaidTrash = cards[0]:1:2
 
 # A dungeon boss, normal or heroic: a card, and a board, each on its own roll.
 StellarTarot.Loot.VanillaDungeonBoss = cards[0]:1:7;boards[0]:1:2
