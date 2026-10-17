@@ -4765,6 +4765,27 @@ if not (Progression and Progression.Ajouter) and ForeverUI and ForeverUI.AddMicr
         b:SetFrameLevel(f:GetFrameLevel() + N.niveaux.croix)
         f.croix = b
         f.onglets = {}
+        -- DÉPLAÇABLE (demande du 2026-10-17 : « la fenêtre doit pouvoir être
+        -- déplacée ») par sa barre de titre, croix exceptée. La place choisie
+        -- (P.place, en unités de l'écran) l'emporte ensuite sur celle que
+        -- donne le client, le temps de la session.
+        f:SetMovable(true)
+        local poignee = CreateFrame("Frame", nil, f)
+        poignee:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+        poignee:SetPoint("TOPRIGHT", f, "TOPRIGHT", N.titre.x2, 0)
+        poignee:SetHeight(-N.roche[2])
+        poignee:SetFrameLevel(f:GetFrameLevel() + N.niveaux.titre)
+        poignee:EnableMouse(true)
+        poignee:RegisterForDrag("LeftButton")
+        poignee:SetScript("OnDragStart", function() f:StartMoving() end)
+        poignee:SetScript("OnDragStop", function()
+            f:StopMovingOrSizing()
+            f:SetUserPlaced(false)
+            local s = f:GetScale()
+            P.place = { f:GetLeft() * s, f:GetTop() * s }
+            P.Recadrer()
+        end)
+        f.poignee = poignee
         f:SetScript("OnShow", function()
             habit.titre:SetText(texte(P.nom) or "")
             PlaySound("igCharacterInfoOpen")
@@ -4778,6 +4799,9 @@ if not (Progression and Progression.Ajouter) and ForeverUI and ForeverUI.AddMicr
         -- le client la place (ShowUIPanel, UpdateUIPanelPositions) : puis elle
         -- se garde dans l'écran, et encore quand l'écran ou l'échelle change
         hooksecurefunc("UpdateUIPanelPositions", function() P.Recadrer() end)
+        if FramePositionDelegate and FramePositionDelegate.UpdateUIPanelPositions then
+            hooksecurefunc(FramePositionDelegate, "UpdateUIPanelPositions", function() P.Recadrer() end)
+        end
         f:RegisterEvent("DISPLAY_SIZE_CHANGED")
         f:RegisterEvent("UI_SCALE_CHANGED")
         f:SetScript("OnEvent", function() P.Recadrer() end)
@@ -4810,19 +4834,26 @@ if not (Progression and Progression.Ajouter) and ForeverUI and ForeverUI.AddMicr
         local h = f:GetHeight() + D.haut + D.bas
         local s = math.min(1, W / w, H / h)
         if math.abs(f:GetScale() - s) > 0.001 then f:SetScale(s) end
-        local l, t = f:GetLeft(), f:GetTop()
-        if not l then return end
+        -- la place : celle où le joueur l'a posée, sinon celle du client
+        local l, t
+        if P.place then
+            l, t = P.place[1] / s, P.place[2] / s
+        else
+            l, t = f:GetLeft(), f:GetTop()
+            if not l then return end
+        end
         -- en unités de l'écran (celles d'UIParent)
-        local g, d = (l - D.gauche) * s, (f:GetRight() + D.droite) * s
-        local hh, b = (t + D.haut) * s, (f:GetBottom() - D.bas) * s
+        local g, d = (l - D.gauche) * s, (l + f:GetWidth() + D.droite) * s
+        local hh, b = (t + D.haut) * s, (t - f:GetHeight() - D.bas) * s
         local dx, dy = 0, 0
         if d > W then dx = W - d end
         if g + dx < 0 then dx = -g end
         if hh > H then dy = H - hh end
         if b + dy < 0 then dy = -b end
-        if dx ~= 0 or dy ~= 0 then
+        if P.place or dx ~= 0 or dy ~= 0 then
             f:ClearAllPoints()
             f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", l + dx / s, t + dy / s)
+            if P.place then P.place = { (l + dx / s) * s, (t + dy / s) * s } end
         end
     end
 
@@ -4940,7 +4971,7 @@ local FUI_DECOUPES = {
 if Progression and Progression.Ajouter and Progression.Kit then
     Progression.Kit.AjouterArt(nil, FUI_DECOUPES)
     S.fui = Progression.Ajouter({
-        cle = TAB_KEY, ordre = 3, icone = "Interface\\mod-Tarot\\Icons\\random_card",
+        cle = TAB_KEY, ordre = 3, icone = "Interface\\ForeverUI\\tabicons\\spell_nature_starfall",
         titre = function() return L.title end,
         nomFenetre = function() return L.progression end,
         portrait = "Interface\\mod-Tarot\\UI\\legacy-up-c60-masque",
