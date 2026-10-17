@@ -86,6 +86,16 @@ StellarTarot.Loot.WotlkWorld = cards[0]:1:12.34
 StellarTarot.Loot.WotlkWorldBoss = cards[0]:1:12.34
 StellarTarot.Loot.WotlkRare = cards[0]:1:12.34
 
+# The other monsters of dungeons and raids (trash): no source yet. Remove the
+# "#" and set a chance to make them drop, for instance a card at 1 %:
+#StellarTarot.Loot.VanillaDungeonTrash = cards[0]:1:1
+#StellarTarot.Loot.BcDungeonTrash = cards[0]:1:1
+#StellarTarot.Loot.WotlkDungeonTrash = cards[0]:1:1
+#StellarTarot.Loot.WotlkHeroicTrash = cards[0]:1:1
+#StellarTarot.Loot.VanillaRaidTrash = cards[0]:1:1
+#StellarTarot.Loot.BcRaidTrash = cards[0]:1:1
+#StellarTarot.Loot.WotlkRaidTrash = cards[0]:1:1
+
 # A dungeon boss, normal or heroic: a board.
 StellarTarot.Loot.VanillaDungeonBoss = boards[0]:1:12.34
 StellarTarot.Loot.BcDungeonBoss = boards[0]:1:12.34
