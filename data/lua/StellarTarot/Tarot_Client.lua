@@ -69,6 +69,29 @@ local L = {
     title         = T("Stellar Tarot", "Tarot stellaire", "Sternentarot", "Tarot estelar", "Звёздное Таро"),
     deck          = T("Deck", "Deck", "Deck", "Mazo", "Колода"),
     search        = T("Search...", "Rechercher...", "Suchen...", "Buscar...", "Поиск..."),
+    edge_clear    = T("Clear the search", "Effacer la recherche", "Suche leeren", "Borrar la búsqueda",
+                      "Сбросить поиск"),
+    edge_titles   = { T("Filter by top edge", "Filtrer par le bord haut", "Nach oberer Kante filtern",
+                        "Filtrar por el borde superior", "Фильтр по верхнему краю"),
+                      T("Filter by right edge", "Filtrer par le bord droit", "Nach rechter Kante filtern",
+                        "Filtrar por el borde derecho", "Фильтр по правому краю"),
+                      T("Filter by bottom edge", "Filtrer par le bord bas", "Nach unterer Kante filtern",
+                        "Filtrar por el borde inferior", "Фильтр по нижнему краю"),
+                      T("Filter by left edge", "Filtrer par le bord gauche", "Nach linker Kante filtern",
+                        "Filtrar por el borde izquierdo", "Фильтр по левому краю") },
+    edge_lines    = { T("Cards whose top edge carries this number.", "Cartes dont le bord haut porte ce chiffre.",
+                        "Karten, deren obere Kante diese Zahl trägt.", "Cartas cuyo borde superior lleva este número.",
+                        "Карты с этим числом на верхнем краю."),
+                      T("Cards whose right edge carries this number.", "Cartes dont le bord droit porte ce chiffre.",
+                        "Karten, deren rechte Kante diese Zahl trägt.", "Cartas cuyo borde derecho lleva este número.",
+                        "Карты с этим числом на правом краю."),
+                      T("Cards whose bottom edge carries this number.", "Cartes dont le bord bas porte ce chiffre.",
+                        "Karten, deren untere Kante diese Zahl trägt.", "Cartas cuyo borde inferior lleva este número.",
+                        "Карты с этим числом на нижнем краю."),
+                      T("Cards whose left edge carries this number.", "Cartes dont le bord gauche porte ce chiffre.",
+                        "Karten, deren linke Kante diese Zahl trägt.", "Cartas cuyo borde izquierdo lleva este número.",
+                        "Карты с этим числом на левом краю.") },
+
     all           = T("All", "Toutes", "Alle", "Todas", "Все"),
     unknown       = T("Unknown card", "Carte inconnue", "Unbekannte Karte", "Carta desconocida", "Неизвестная карта"),
     cumulative    = T("Cumulative", "Cumulatif", "Kumulativ", "Acumulativa", "Накопительная"),
@@ -1875,6 +1898,9 @@ end
 
 -- THE DECK: the tabs on the left edge, one per tag; the grid of the tab's
 -- cards to their right.
+-- The search by edges, on the right of the name search: its width.
+local EDGE_FILTER_WIDTH = 78
+
 local function BuildDeck(ui)
     local panel = Panel(ui.frame, COL1, DECK_WIDTH, L.deck)
 
@@ -1886,7 +1912,7 @@ local function BuildDeck(ui)
     -- whose name contains what is typed (accents and case ignored).
     local search = CreateFrame("EditBox", "StellarTarotDeckSearch", panel, "InputBoxTemplate")
     search:SetPoint("TOPLEFT", tabs, "TOPRIGHT", 14, 0)
-    search:SetSize(COLUMNS * (CELL + GAP) - 10, 20)
+    search:SetSize(COLUMNS * (CELL + GAP) - 10 - EDGE_FILTER_WIDTH, 20)
     search:SetAutoFocus(false)
     search:SetMaxLetters(40)
     search.hint = search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -1904,8 +1930,79 @@ local function BuildDeck(ui)
     search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
     ui.search = search
 
+    -- THE SEARCH BY EDGES, on the right of the name search: a card drawn
+    -- small, a box for a number on each of its four edges. A number keeps the
+    -- known cards that carry it at that place; an empty box takes any.
+    -- Combined with the name and the tab. Plain boxes: the game's input
+    -- template is too wide at its ends for a single digit.
+    S.edgeFilter = S.edgeFilter or {}
+    local filter = CreateFrame("Frame", nil, panel)
+    filter:SetPoint("LEFT", search, "RIGHT", 6, 0)        -- centred on the name search
+    filter:SetSize(EDGE_FILTER_WIDTH, 48)
+    local card = filter:CreateTexture(nil, "ARTWORK")
+    card:SetSize(14, 18)
+    card:SetPoint("CENTER", filter, "LEFT", 30, 0)
+    card:SetTexture(0.3, 0.25, 0.42, 1)
+    ui.edgeBoxes = {}
+    local where = { { "BOTTOM", "TOP", 0, 1 }, { "LEFT", "RIGHT", 1, 0 },
+                    { "TOP", "BOTTOM", 0, -1 }, { "RIGHT", "LEFT", -1, 0 } }
+    for e = 1, 4 do
+        local box = CreateFrame("EditBox", nil, filter)
+        box:SetSize(16, 15)
+        box:SetPoint(where[e][1], card, where[e][2], where[e][3], where[e][4])
+        box:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+                          edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 8,
+                          insets = { left = 2, right = 2, top = 2, bottom = 2 } })
+        box:SetBackdropColor(0, 0, 0, 0.9)
+        box:SetBackdropBorderColor(0.6, 0.6, 0.6)
+        box:SetFontObject(GameFontHighlightSmall)
+        box:SetJustifyH("CENTER")
+        box:SetTextInsets(0, 0, 0, 0)
+        box:SetAutoFocus(false)
+        box:SetMaxLetters(1)
+        box:SetNumeric(true)
+        box.edge = e
+        box:SetScript("OnTextChanged", function(self)
+            local n = tonumber(self:GetText() or "")
+            if n == 0 then n = nil end
+            if S.edgeFilter[self.edge] ~= n then
+                S.edgeFilter[self.edge] = n
+                if RefreshDeck then RefreshDeck() end
+            end
+        end)
+        box:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
+        box:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+        box:SetScript("OnTabPressed", function(self)
+            local nxt = ui.edgeBoxes[self.edge % 4 + 1]
+            if nxt then nxt:SetFocus() end
+        end)
+        box:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(L.edge_titles[self.edge])
+            GameTooltip:AddLine(L.edge_lines[self.edge], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        box:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        ui.edgeBoxes[e] = box
+    end
+    -- Empties the whole search: the name and the four boxes.
+    local clearEdges = CreateFrame("Button", nil, filter, "UIPanelCloseButton")
+    clearEdges:SetSize(22, 22)
+    clearEdges:SetPoint("LEFT", card, "RIGHT", 20, 0)
+    clearEdges:SetScript("OnClick", function()
+        for _, box in ipairs(ui.edgeBoxes) do box:SetText(""); box:ClearFocus() end
+        search:SetText("")
+        search:ClearFocus()
+    end)
+    clearEdges:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(L.edge_clear)
+        GameTooltip:Show()
+    end)
+    clearEdges:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     local scroll = CreateFrame("ScrollFrame", "StellarTarotDeckScroll", panel, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", tabs, "TOPRIGHT", 8, -26)
+    scroll:SetPoint("TOPLEFT", tabs, "TOPRIGHT", 8, -26 - 14)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(COLUMNS * (CELL + GAP), 10)
@@ -2371,6 +2468,15 @@ local ALL = 0
 -- eighties -- and a card still unknown answers too, its number being all it
 -- shows. Anything else is read as a name, as before.
 local function Matches(card)
+    -- THE EDGES ASKED FOR: a known card carrying each of them at its place.
+    -- A card not yet known keeps its numbers hidden, so it never answers.
+    local edges = S.edgeFilter
+    if edges and (edges[1] or edges[2] or edges[3] or edges[4]) then
+        if not S.known[card.id] then return false end
+        for e = 1, 4 do
+            if edges[e] and card.edges[e] ~= edges[e] then return false end
+        end
+    end
     local wanted = S.search or ""
     if wanted == "" then return true end
     if wanted:match("^%d+$") then
