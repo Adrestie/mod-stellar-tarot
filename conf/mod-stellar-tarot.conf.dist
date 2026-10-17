@@ -75,7 +75,7 @@ StellarTarot.Loot.boards[0] = [87501, 87502, 87503, 87504]
 StellarTarot.Loot.Rate = 100
 
 # Any creature of the open world: a card; more often from a rare (a rare of a
-# WotLK dungeon plays WotlkRare as well), always from a world boss.
+# dungeon plays its Rare line as well), always from a world boss.
 StellarTarot.Loot.VanillaWorld = cards[0]:1:2
 StellarTarot.Loot.VanillaWorldBoss = cards[0]:1:100
 StellarTarot.Loot.VanillaRare = cards[0]:1:50
