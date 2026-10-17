@@ -4,6 +4,18 @@ The version is the first word of the newest heading.
 
 ## 0.1.0 (unreleased)
 
+- Cards and boards drop through DynamicLoot, the shared loot extension
+  (`dynamicloot`, listed in `dependencies`): the `StellarTarot.Loot.<Family>`
+  lines of `mod-stellar-tarot.conf`, read when the server starts, with the
+  lists `cards[0]` and `boards[0]` and the factor `StellarTarot.Loot.Rate`.
+  The loot sources go: the table `mod_stellar_tarot_source` (dropped), the
+  loot hook, `.tarot sources`, `StellarTarot.Loot.Enabled` and
+  `StellarTarot.Loot.Known` (DynamicLoot does not know accounts: a known card
+  may always drop again, as it did by default). The test sources keep their
+  placeholder rate, except the one for the elites of Wrath maps (card 16):
+  DynamicLoot has no family for elites. Without DynamicLoot, a warning at
+  start-up, and nothing drops. The reserves the cards draw from stay
+  (`mod_stellar_tarot_loot_pool`, grey trinkets, gear, herbs, the crate).
 - Installed and removed by the WoW-mods installer, from `installer.json`. The
   module's own installer, remover and identifier shift are gone, and `tools/`
   with them.

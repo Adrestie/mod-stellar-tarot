@@ -89,20 +89,21 @@ it.
 
 ## Change what drops, and how often
 
-One row of `mod_stellar_tarot_source` per source: what drops (`what` card or
-board, `target_id` the number, or 0 for one drawn at random from the whole
-catalogue), and from what -- for now a creature killed, sorted by
-`creature_entry`, `expansion` of its map, `place` (world, dungeon, raid),
-`heroic`, `creature_rank` (normal, elite, boss) and its level. A filter left
-at its default matches anything. Every row is played on its own, at its
-`chance` in percent, each time a creature's loot is filled; what wins joins
-the loot window. `.tarot sources` lists what is loaded, `.tarot reload` reads
-it again.
+Cards and boards drop through DynamicLoot (the `dynamicloot` module), from
+the `StellarTarot.Loot.*` lines of `mod-stellar-tarot.conf`: one line per
+family of DynamicLoot (world creatures, dungeon and raid bosses by expansion,
+level brackets, gathering, skinning, chests, containers), each written
+`item:quantity:percent`, `,` for a fallback, `;` between independent rolls.
+`cards[0]` and `boards[0]` are the whole catalogue, drawn without weights; a
+card is item 87000 + its number, a board 87500 + its number:
 
-Three settings in `mod-stellar-tarot.conf`: `StellarTarot.Loot.Enabled`,
-`StellarTarot.Loot.Rate` (a percentage on every chance -- 1000 for a test),
-`StellarTarot.Loot.Known` (whether a card the account already knows may drop
-again). `.reload config` after a change, then `.tarot reload`.
+```
+StellarTarot.Loot.WotlkRaidBoss = cards[0]:2:12.34
+StellarTarot.Loot.MobLvl_80_89  = 87016:1:1          card 16 by its item
+StellarTarot.Loot.Rate          = 100                a factor on everything
+```
+
+DynamicLoot reads them when the server starts: a change needs a restart.
 
 ## Put a workbench in the world
 
@@ -198,7 +199,7 @@ recipe with room left admits it with what is placed.
 
 ### Nothing drops
 
-`.tarot sources` first: the loot may be off, the rate at 0, or every row
-refused (the log says why). Then the row's filters: a creature in a raid map
-never matches `place = 'dungeon'`; `expansion` is the map's, not the
-creature's.
+The start-up log first: DynamicLoot names every line it could not read, and
+says how many lines the module declares; without the dynamicloot module, the
+Tarot says so there too. Then the family: a creature in a raid map is never a
+dungeon boss, and the expansion is the map's, not the creature's.

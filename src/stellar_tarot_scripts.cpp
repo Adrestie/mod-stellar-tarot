@@ -29,7 +29,9 @@
 #include "Creature.h"
 #include "GameObject.h"
 #include "Item.h"
+#include "Log.h"
 #include "LootMgr.h"
+#include "ModuleMgr.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "QuestDef.h"
@@ -52,6 +54,13 @@ public:
     void OnBeforeWorldInitialized() override
     {
         sStellarTarotMgr->Load();
+
+        // Cards and boards drop through DynamicLoot: without it, the module works and none of them drops.
+        for (std::string_view const module : Acore::Module::GetEnableModulesList())
+            if (module == "dynamicloot")
+                return;
+        LOG_WARN("module", "StellarTarot: the dynamicloot module is not on this server: the cards work, but "
+            "no card or board drops. Install DynamicLoot.");
     }
 };
 
@@ -349,9 +358,8 @@ public:
     void OnHeal(Unit* /*healer*/, Unit* /*receiver*/, uint32& /*gain*/) override { }
 };
 
-// Cards and boards into the loot. The hook fires on EVERY loot the server
-// fills: the sorting happens in StellarTarotLoot::Fill, from the loot store
-// onwards, before anything is read.
+// What the cards add to a loot, and the crate of goods. Cards and boards
+// themselves drop through DynamicLoot, from mod-stellar-tarot.conf.
 class StellarTarotLootScript : public MiscScript
 {
 public:
@@ -364,7 +372,6 @@ public:
         LootStore const& store, Player* lootOwner, bool /*personal*/,
         bool /*noEmptyError*/, uint16 /*lootMode*/) override
     {
-        StellarTarotLoot::Fill(loot, store, lootOwner);
         if (!lootOwner)
             return;
         // What the CARDS add to a corpse: the same moment, the creature's own

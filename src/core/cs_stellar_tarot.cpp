@@ -145,7 +145,6 @@ public:
             { "xp",     HandleXpCommand,      SEC_GAMEMASTER,  Console::Yes },
             // The workbench: the shared bench relays here; the rules stay here.
             { "fuse",   HandleFuseCommand,   SEC_PLAYER,        Console::No  },
-            { "sources", HandleSourcesCommand, SEC_GAMEMASTER,  Console::Yes },
             { "check",  HandleCheckCommand,  SEC_GAMEMASTER,    Console::No  },
             { "test",   testTable },
         };
@@ -678,27 +677,6 @@ public:
         handler->PSendSysMessage("Tarot : verdict d'ensemble -> %s", tout ? "ATTEINT" : "MANQUE");
         LOG_INFO("module", "StellarTarot CHECK: verdict d'ensemble pour {} -> {}",
                  player->GetName(), tout ? "ATTEINT" : "MANQUE");
-        return true;
-    }
-
-    static bool HandleSourcesCommand(ChatHandler* handler)
-    {
-        if (!sStellarTarotMgr->Enabled())
-        {
-            Say(handler, STELLAR_TAROT_STR_DISABLED);
-            return true;
-        }
-        std::vector<StellarTarotSource> const& sources = StellarTarotLoot::Sources();
-        Say(handler, STELLAR_TAROT_STR_SOURCES_HEADER, sources.size(),
-            StellarTarotLoot::Enabled() ? "on" : "off", StellarTarotLoot::Rate(),
-            StellarTarotLoot::KnownMayDrop() ? "may drop" : "never drop");
-        if (sources.empty())
-        {
-            Say(handler, STELLAR_TAROT_STR_SOURCES_NONE);
-            return true;
-        }
-        for (StellarTarotSource const& source : sources)
-            Say(handler, STELLAR_TAROT_STR_SOURCES_LINE, source.id, StellarTarotLoot::Describe(source));
         return true;
     }
 

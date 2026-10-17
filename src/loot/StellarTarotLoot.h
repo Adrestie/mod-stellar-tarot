@@ -27,47 +27,17 @@ class Loot;
 class LootStore;
 class Player;
 
-// WHERE A CARD OR A BOARD COMES FROM: one row of mod_stellar_tarot_source.
-// A row names what drops -- a given card or board, or one drawn at random
-// from the catalogue -- and from what: for now a creature killed, sorted by
-// its entry, the expansion of its map, the kind of place, the heroic mode,
-// its rank and its level. A filter left at its default matches anything.
-// Every row is played on its own, at its own chance, whenever a creature's
-// loot is filled; what wins joins that loot, in the loot window, like any
-// item of the creature's own table.
-struct StellarTarotSource
-{
-    uint32 id = 0;
-    std::string origin;                 // "creature" -- the only origin so far
-    bool board = false;                 // what drops: a card, or a board
-    uint32 targetId = 0;                // its number; 0 = drawn at random
-    uint32 creatureEntry = 0;           // 0 = any creature
-    int8 expansion = -1;                // -1 any; 0 classic, 1 Burning Crusade, 2 Wrath -- of the MAP
-    std::string place;                  // "" any; world, dungeon, raid
-    int8 heroic = -1;                   // -1 any; 0 normal, 1 heroic
-    std::string rank;                   // "" any; normal, elite, boss
-    uint32 minLevel = 0;                // 0 = no floor
-    uint32 maxLevel = 0;                // 0 = no ceiling
-    float chance = 0.0f;                // percent, before the configured rate
-    uint8 quantity = 1;                 // how many when the roll wins
-    std::string comment;
-};
+// WHERE A CARD OR A BOARD COMES FROM is not here any more: they drop through
+// DynamicLoot (the dynamicloot module), from the StellarTarot.Loot.* settings
+// of mod-stellar-tarot.conf. What is left are the reserves the CARDS draw from
+// when they add something to a loot: the crate of goods, grey trinkets, gear,
+// herbs.
 
 namespace StellarTarotLoot
 {
-    // Reads the sources from the world database and the settings from the
-    // configuration. Called by the manager's Load, so `.tarot reload` reads
-    // them again.
+    // Reads the reserves from the world database. Called by the manager's
+    // Load, so `.tarot reload` reads them again.
     void Load();
-
-    [[nodiscard]] std::vector<StellarTarotSource> const& Sources();
-    [[nodiscard]] bool Enabled();
-    [[nodiscard]] float Rate();                 // percent: 100 leaves the chances as written
-    [[nodiscard]] bool KnownMayDrop();          // a card the account already knows may drop again
-
-    // Called for EVERY loot the server fills; leaves at once unless the
-    // loot is a creature's.
-    void Fill(Loot* loot, LootStore const& store, Player* player);
 
     // THE CRATE OF GOODS a card lays in a corpse. What it holds is the loot
     // table of a LOCKED CHEST of the player's own expansion -- the game's own
@@ -87,9 +57,6 @@ namespace StellarTarotLoot
     // UNE HERBE de l'age d'un joueur de ce niveau, prise dans ce que les
     // noeuds du decor donnent deja ; 0 quand il n'y a rien a donner.
     [[nodiscard]] uint32 HerbFor(uint8 level);
-
-    // One line saying what a source is, for `.tarot sources`.
-    [[nodiscard]] std::string Describe(StellarTarotSource const& source);
 }
 
 #endif

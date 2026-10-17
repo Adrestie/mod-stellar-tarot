@@ -178,25 +178,20 @@ event and action.
 
 ## The loot
 
-Where cards and boards come from is content, in `mod_stellar_tarot_source`:
-one row per source. A row says what drops -- a given card or board by its
-number, or one drawn at random from the whole catalogue (`target_id` 0) --
-and from what. The only origin so far is a creature killed, sorted by its
-entry, the expansion of its map (classic, Burning Crusade, Wrath), the kind of
-place (world, dungeon, raid), the heroic mode, its rank (normal, elite, boss)
-and its level; a filter left at its default matches anything. Every row is
-played on its own, at its own chance, each time a creature's loot is filled,
-and what wins joins the loot window like an item of the creature's own table.
-A row naming a card missing from the catalogue, or a value out of its list,
-is refused at load time and said so in the log.
+Cards and boards drop through
+[DynamicLoot](https://github.com/Adrestie/WoW-mods-dynamicloot), the shared
+loot extension: the `StellarTarot.Loot.*` lines of `mod-stellar-tarot.conf`
+say what drops in which of its families -- world creatures, dungeon and raid
+bosses by expansion, level brackets, gathering nodes, skinning, chests,
+containers -- at what chance, with one rate factor on top. DynamicLoot places
+them, and holds the grey boss brake and the bad luck protection shared by
+every module. Without it the cards work, and none of them drops. For now, at
+the placeholder rate of 12.34 %: a card from any creature of the open world, a
+board from a dungeon boss, two cards from a raid boss.
 
-Three settings in `mod-stellar-tarot.conf`: `StellarTarot.Loot.Enabled`
-turns the loot off without unloading the sources; `StellarTarot.Loot.Rate` is
-a percentage applied to every chance (1000 multiplies them by ten, for a
-test); `StellarTarot.Loot.Known` says whether a card or a board the account
-already knows may drop again -- for the workbench, or for trade. `.tarot
-sources` lists what is loaded; `.tarot reload` reads the sources again with
-the catalogue, and `.reload config` first if a setting changed.
+The module's own code only adds to a loot what the cards promise (a grey
+trinket, a piece of gear, a herb, the crate of goods), from reserves it reads
+in the world database.
 
 ## The workbench
 
@@ -260,7 +255,7 @@ data/lua/StellarTarot/    the server script and the window, sent over AIO
 data/lua/Workbench/       the shared workbench, identical in every module that uses it
 data/sql/                 world and characters
 docs/HOWTO.md             how to do things with the module
-src/                      the C++: core, effects, loot
+src/                      the C++: core, effects, the cards' loot reserves
 ```
 
 ## Licence

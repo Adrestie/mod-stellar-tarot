@@ -85,9 +85,7 @@ enum StellarTarotStrings : uint32
     STELLAR_TAROT_STR_FUSE_NOTHING      = 43,  // nothing to draw
     STELLAR_TAROT_STR_FUSE_OK           = 44,  // the three become {}
     // The loot sources
-    STELLAR_TAROT_STR_SOURCES_HEADER    = 45,  // {} source(s); loot {}, rate {} %, known items {}
-    STELLAR_TAROT_STR_SOURCES_LINE      = 46,  //   #{}: {}
-    STELLAR_TAROT_STR_SOURCES_NONE      = 47,
+    // 45 to 47: .tarot sources, gone with the loot sources to DynamicLoot. Not to be reused.
     // Replacing, moving, swapping
     STELLAR_TAROT_STR_REPLACED          = 48,  // {} takes the place of {} on {},{}
     STELLAR_TAROT_STR_MOVED             = 49,  // {} moved to {},{}

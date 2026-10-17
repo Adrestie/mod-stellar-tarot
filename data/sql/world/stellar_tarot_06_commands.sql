@@ -31,9 +31,6 @@ INSERT INTO `command` (`name`, `security`, `help`) VALUES
 
 Says what the cards make of a reference experience: a thousand points are passed through the module''s own hook, and the result is shown with the share it adds. The named player, else your target, else yourself.'),
 ('tarot fuse',          0, 'Syntax: .tarot fuse $item_entry $item_entry $item_entry\n\nThe workbench: three cards you carry, any of them, become one card drawn at random from the whole catalogue; three boards become one board. This is the path the shared workbench takes.'),
-('tarot sources',       2, 'Syntax: .tarot sources
-
-Lists where cards and boards drop from, as loaded from mod_stellar_tarot_source: every source with what it drops, at what chance, from what -- and the three settings that govern the loot.'),
 ('tarot test',          2, 'Syntax: .tarot test card|clear|force|hour|hp|mana|trace|status|fire|snapshot|aura ...\n\nThe test bench: one card level alone on a character, test values armed, states and the hour forced, and probes that write every effect that fires. Held in memory only.'),
 ('tarot test card',     2, 'Syntax: .tarot test card $player $card_id $level [cumulative]\n\nPuts one card level alone on the player, in place of the board, with the test values armed: no chance roll, no cooldown. With cumulative, the levels below come too when the card is cumulative, as the board gives them.'),
 ('tarot test clear',    2, 'Syntax: .tarot test clear $player\n\nGives the player back the board, and releases the forced states, the forced hour and the probes.'),
