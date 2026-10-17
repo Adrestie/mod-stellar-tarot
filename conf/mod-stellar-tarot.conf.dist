@@ -97,3 +97,6 @@ StellarTarot.Loot.VanillaRaidBoss = cards[0]:2:12.34
 StellarTarot.Loot.BcRaidBoss = cards[0]:2:12.34
 StellarTarot.Loot.WotlkRaidBoss = cards[0]:2:12.34
 StellarTarot.Loot.IcecrownRaidBoss = cards[0]:2:12.34
+
+# A rare of a WotLK map, outside or in a dungeon: card 16, The Star.
+StellarTarot.Loot.WotlkElite = 87016:1:12.34
