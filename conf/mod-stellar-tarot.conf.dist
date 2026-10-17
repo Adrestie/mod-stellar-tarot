@@ -62,8 +62,7 @@ StellarTarot.Check = 0
 #    On a list, the quantity is that many distinct draws in the list, one item
 #    each; on an item, a stack. A card is item 87000 + its number, a board
 #    87500 + its number. A family left out drops nothing; a line that cannot
-#    be read is reported at start-up and ignored. 12.34 is the placeholder
-#    rate: nothing is balanced yet.
+#    be read is reported at start-up and ignored.
 #
 
 # Every card, and every board, of the catalogue
@@ -75,34 +74,35 @@ StellarTarot.Loot.boards[0] = [87501, 87502, 87503, 87504]
 # at 100), 0 turns the module's loot off.
 StellarTarot.Loot.Rate = 100
 
-# Any creature of the open world, world bosses and rares included: a card.
-StellarTarot.Loot.VanillaWorld = cards[0]:1:12.34
-StellarTarot.Loot.VanillaWorldBoss = cards[0]:1:12.34
-StellarTarot.Loot.VanillaRare = cards[0]:1:12.34
-StellarTarot.Loot.BcWorld = cards[0]:1:12.34
-StellarTarot.Loot.BcWorldBoss = cards[0]:1:12.34
-StellarTarot.Loot.BcRare = cards[0]:1:12.34
-StellarTarot.Loot.WotlkWorld = cards[0]:1:12.34
-StellarTarot.Loot.WotlkWorldBoss = cards[0]:1:12.34
-StellarTarot.Loot.WotlkRare = cards[0]:1:12.34
+# Any creature of the open world: a card; more often from a rare (a rare of a
+# WotLK dungeon plays WotlkRare as well), always from a world boss.
+StellarTarot.Loot.VanillaWorld = cards[0]:1:2
+StellarTarot.Loot.VanillaWorldBoss = cards[0]:1:100
+StellarTarot.Loot.VanillaRare = cards[0]:1:50
+StellarTarot.Loot.BcWorld = cards[0]:1:3
+StellarTarot.Loot.BcWorldBoss = cards[0]:1:100
+StellarTarot.Loot.BcRare = cards[0]:1:50
+StellarTarot.Loot.WotlkWorld = cards[0]:1:3
+StellarTarot.Loot.WotlkWorldBoss = cards[0]:1:100
+StellarTarot.Loot.WotlkRare = cards[0]:1:50
 
-# The other monsters of dungeons and raids (trash): a card at 1 %.
+# The other monsters of dungeons and raids (trash): a card at 1 or 2 %.
 StellarTarot.Loot.VanillaDungeonTrash = cards[0]:1:1
 StellarTarot.Loot.BcDungeonTrash = cards[0]:1:1
 StellarTarot.Loot.WotlkDungeonTrash = cards[0]:1:1
-StellarTarot.Loot.WotlkHeroicTrash = cards[0]:1:1
-StellarTarot.Loot.VanillaRaidTrash = cards[0]:1:1
-StellarTarot.Loot.BcRaidTrash = cards[0]:1:1
-StellarTarot.Loot.WotlkRaidTrash = cards[0]:1:1
+StellarTarot.Loot.WotlkHeroicTrash = cards[0]:1:2
+StellarTarot.Loot.VanillaRaidTrash = cards[0]:1:2
+StellarTarot.Loot.BcRaidTrash = cards[0]:1:2
+StellarTarot.Loot.WotlkRaidTrash = cards[0]:1:2
 
-# A dungeon boss, normal or heroic: a board.
-StellarTarot.Loot.VanillaDungeonBoss = boards[0]:1:12.34
-StellarTarot.Loot.BcDungeonBoss = boards[0]:1:12.34
-StellarTarot.Loot.WotlkDungeonBoss = boards[0]:1:12.34
-StellarTarot.Loot.WotlkHeroicBoss = boards[0]:1:12.34
+# A dungeon boss, normal or heroic: a card, and a board, each on its own roll.
+StellarTarot.Loot.VanillaDungeonBoss = cards[0]:1:7;boards[0]:1:2
+StellarTarot.Loot.BcDungeonBoss = cards[0]:1:10;boards[0]:1:5
+StellarTarot.Loot.WotlkDungeonBoss = cards[0]:1:15;boards[0]:1:7
+StellarTarot.Loot.WotlkHeroicBoss = cards[0]:1:20;boards[0]:1:10
 
-# A raid boss: two cards.
-StellarTarot.Loot.VanillaRaidBoss = cards[0]:2:12.34
-StellarTarot.Loot.BcRaidBoss = cards[0]:2:12.34
-StellarTarot.Loot.WotlkRaidBoss = cards[0]:2:12.34
-StellarTarot.Loot.IcecrownRaidBoss = cards[0]:2:12.34
+# A raid boss: cards, on independent rolls; Icecrown bosses a board as well.
+StellarTarot.Loot.VanillaRaidBoss = cards[0]:1:15;cards[0]:1:10
+StellarTarot.Loot.BcRaidBoss = cards[0]:1:15;cards[0]:1:15
+StellarTarot.Loot.WotlkRaidBoss = cards[0]:2:20;cards[0]:1:20
+StellarTarot.Loot.IcecrownRaidBoss = cards[0]:3:30;cards[0]:2:15;boards[0]:1:10

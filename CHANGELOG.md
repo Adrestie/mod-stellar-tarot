@@ -11,10 +11,13 @@ The version is the first word of the newest heading.
   The loot sources go: the table `mod_stellar_tarot_source` (dropped), the
   loot hook, `.tarot sources`, `StellarTarot.Loot.Enabled` and
   `StellarTarot.Loot.Known` (DynamicLoot does not know accounts: a known card
-  may always drop again, as it did by default). The test sources keep their
-  placeholder rate, except the one for the elites of Wrath maps (card 16),
-  dropped. Without DynamicLoot, a warning at
-  start-up, and nothing drops. The reserves the cards draw from stay
+  may always drop again, as it did by default). The test sources give way
+  to rates of their own, in every family of creatures: the open world (2 to
+  3 %, rares 50 %, world bosses always), the other monsters of dungeons and
+  raids (1 to 2 %), dungeon bosses (a card and a board, each on its own
+  roll), raid bosses (several cards; a board too in Icecrown). The source
+  for the elites of Wrath maps (card 16) is gone. Without DynamicLoot, a
+  warning at start-up, and nothing drops. The reserves the cards draw from stay
   (`mod_stellar_tarot_loot_pool`, grey trinkets, gear, herbs, the crate).
 - Installed and removed by the WoW-mods installer, from `installer.json`. The
   module's own installer, remover and identifier shift are gone, and `tools/`
