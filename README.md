@@ -187,8 +187,8 @@ containers -- at what chance, with one rate factor on top. DynamicLoot places
 them, and holds the grey boss brake and the bad luck protection shared by
 every module. Without it the cards work, and none of them drops. By default: a
 card from a creature of the open world at 2 to 3 %, from a rare at 50 %, from
-a world boss always; from the other monsters of dungeons and raids at 1 to 2 %;
-a card and a board from a dungeon boss (7 % and 2 % in the old world, up to
+a world boss always; from the other monsters of dungeons at 2 to 4 %, of raids at 5 %;
+a card and a board from a dungeon boss (7 % and 5 % in the old world, up to
 20 % and 10 % in heroic Wrath dungeons); several cards from a raid boss, and a
 board as well from those of Icecrown.
 

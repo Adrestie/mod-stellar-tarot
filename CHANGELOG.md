@@ -14,7 +14,7 @@ The version is the first word of the newest heading.
   may always drop again, as it did by default). The test sources give way
   to rates of their own, in every family of creatures: the open world (2 to
   3 %, rares 50 %, world bosses always), the other monsters of dungeons and
-  raids (1 to 2 %), dungeon bosses (a card and a board, each on its own
+  raids (2 to 5 %), dungeon bosses (a card and a board, each on its own
   roll), raid bosses (several cards; a board too in Icecrown). The source
   for the elites of Wrath maps (card 16) is gone. Without DynamicLoot, a
   warning at start-up, and nothing drops. The reserves the cards draw from stay
