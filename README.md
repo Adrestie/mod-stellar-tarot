@@ -187,7 +187,8 @@ containers -- at what chance, with one rate factor on top. DynamicLoot places
 them, and holds the grey boss brake and the bad luck protection shared by
 every module. Without it the cards work, and none of them drops. For now, at
 the placeholder rate of 12.34 %: a card from any creature of the open world, a
-board from a dungeon boss, two cards from a raid boss, card 16 (The Star)
+board from a dungeon boss, two cards from a raid boss, a card at 1 % from the
+other monsters of dungeons and raids, card 16 (The Star)
 from a rare of a Wrath map, outside raids.
 
 The module's own code only adds to a loot what the cards promise (a grey
