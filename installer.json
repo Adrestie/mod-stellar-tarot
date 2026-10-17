@@ -61,7 +61,8 @@
     "world": {
       "tables": ["mod_stellar_tarot_card", "mod_stellar_tarot_card_locale", "mod_stellar_tarot_script",
                  "mod_stellar_tarot_tag", "mod_stellar_tarot_tag_locale", "mod_stellar_tarot_board",
-                 "mod_stellar_tarot_board_line", "mod_stellar_tarot_loot_pool"],
+                 "mod_stellar_tarot_board_line", "mod_stellar_tarot_board_hole",
+                 "mod_stellar_tarot_loot_pool"],
       "rows": [
         { "table": "module_string", "where": "module = 'mod-stellar-tarot'" },
         { "table": "module_string_locale", "where": "module = 'mod-stellar-tarot'" },

@@ -108,6 +108,8 @@ StellarTarotLayoutResult StellarTarotLayouts::Place(Player* player, uint8 row, u
         return why;
     if (row < 1 || row > board->rows || col < 1 || col > board->cols)
         return StellarTarotLayoutResult::OutOfBounds;
+    if (board->Hole(row, col))
+        return StellarTarotLayoutResult::CellIsHole;
     if (!sStellarTarotMgr->Card(cardId))
         return StellarTarotLayoutResult::NoSuchCard;
     if (!StellarTarotBinder::KnowsCard(Account(player), cardId))
@@ -138,6 +140,8 @@ StellarTarotLayoutResult StellarTarotLayouts::Move(Player* player, uint8 fromRow
         return why;
     if (toRow < 1 || toRow > board->rows || toCol < 1 || toCol > board->cols)
         return StellarTarotLayoutResult::OutOfBounds;
+    if (board->Hole(toRow, toCol))
+        return StellarTarotLayoutResult::CellIsHole;
     StellarTarotPlacement const* from = At(layout, fromRow, fromCol);
     if (!from)
         return StellarTarotLayoutResult::CellEmpty;
@@ -286,12 +290,14 @@ std::vector<StellarTarotActivation> StellarTarotLayouts::Activations(StellarTaro
 
     // The grid, for the neighbours: [row][col], 1-based, 0 = empty.
     uint32 grid[STELLAR_TAROT_MAX_SIDE + 2][STELLAR_TAROT_MAX_SIDE + 2] = {};
+    // A card saved on a cell that has since become a hole is not on the board.
     for (auto const& p : layout.cells)
-        if (p.row >= 1 && p.row <= board->rows && p.col >= 1 && p.col <= board->cols)
+        if (p.row >= 1 && p.row <= board->rows && p.col >= 1 && p.col <= board->cols && !board->Hole(p.row, p.col))
             grid[p.row][p.col] = p.cardId;
 
     // The number a card's edge faces: the neighbour's opposite edge, the
-    // board's number on the rim, 0 where an inner neighbour is missing.
+    // board's number on the rim or in a hole, 0 where an inner neighbour is
+    // missing.
     auto facing = [&](uint8 row, uint8 col, uint8 edge) -> uint8
     {
         int const dr[STELLAR_TAROT_EDGES] = { -1, 0, 1, 0 };
@@ -306,6 +312,8 @@ std::vector<StellarTarotActivation> StellarTarotLayouts::Activations(StellarTaro
             return board->rowLeft[row - 1];             // left rim
         if (nc > board->cols)
             return board->rowRight[row - 1];            // right rim
+        if (uint8 const hole = board->Hole(uint8(nr), uint8(nc)))
+            return hole;                                // a hole's number, on every side of it
         StellarTarotCard const* other = sStellarTarotMgr->Card(grid[nr][nc]);
         if (!other)
             return 0;

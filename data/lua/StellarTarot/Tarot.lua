@@ -185,6 +185,19 @@ local function Catalogue(locale)
         until not q:NextRow()
     end
 
+    -- THE HOLES: inner cells where no card goes, each with its number, keyed
+    -- row * 10 + col as the window keys its cells.
+    q = WorldDBQuery("SELECT board_id, row_idx, col_idx, number FROM mod_stellar_tarot_board_hole")
+    if q then
+        repeat
+            local board = boards[q:GetUInt32(0)]
+            if board then
+                board.holes = board.holes or {}
+                board.holes[q:GetUInt32(1) * 10 + q:GetUInt32(2)] = q:GetUInt32(3)
+            end
+        until not q:NextRow()
+    end
+
     -- LES SORTS DONT LE CLIENT CALCULE LES CHIFFRES LUI-MEME : leur texte porte
     -- un $s, et le client multiplie deja ce chiffre par les cumuls. L'addon ne
     -- doit donc pas le multiplier une seconde fois.

@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS `mod_stellar_tarot_tag_locale` (
 
 CREATE TABLE IF NOT EXISTS `mod_stellar_tarot_board` (
   `board_id` INT UNSIGNED NOT NULL COMMENT 'the board number, 1..99; its item is 87500 + board_id',
-  `row_count` TINYINT UNSIGNED NOT NULL COMMENT '2..4',
-  `col_count` TINYINT UNSIGNED NOT NULL COMMENT '2..4',
+  `row_count` TINYINT UNSIGNED NOT NULL COMMENT '2..5',
+  `col_count` TINYINT UNSIGNED NOT NULL COMMENT '2..5',
   `art` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'texture of the board, client side, under Interface\\mod-Tarot\\Boards',
   PRIMARY KEY (`board_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -152,3 +152,16 @@ CREATE TABLE IF NOT EXISTS `mod_stellar_tarot_board_line` (
   PRIMARY KEY (`board_id`, `axis`, `idx`, `side`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='StellarTarot: the numbers on each side of each row and column of a board';
+
+-- The holes of a board: inner cells (never on the rim) where no card goes. A
+-- hole carries one number, faced by the edge of every card beside it -- the
+-- card above it by its bottom edge, the card on its left by its right edge, and
+-- so on -- as the numbers around the board are.
+CREATE TABLE IF NOT EXISTS `mod_stellar_tarot_board_hole` (
+  `board_id` INT UNSIGNED NOT NULL,
+  `row_idx` TINYINT UNSIGNED NOT NULL COMMENT '1-based; 2..row_count - 1',
+  `col_idx` TINYINT UNSIGNED NOT NULL COMMENT '1-based; 2..col_count - 1',
+  `number` TINYINT UNSIGNED NOT NULL COMMENT '1..9',
+  PRIMARY KEY (`board_id`, `row_idx`, `col_idx`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='StellarTarot: the holes of a board and the number in each';

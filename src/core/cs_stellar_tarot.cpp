@@ -345,6 +345,9 @@ public:
             case StellarTarotLayoutResult::OutOfBounds:
                 SayError(handler, STELLAR_TAROT_STR_OUT_OF_BOUNDS, row, col);
                 break;
+            case StellarTarotLayoutResult::CellIsHole:
+                SayError(handler, STELLAR_TAROT_STR_CELL_HOLE, row, col);
+                break;
             case StellarTarotLayoutResult::CellTaken:
                 SayError(handler, STELLAR_TAROT_STR_CELL_TAKEN, row, col);
                 break;

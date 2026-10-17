@@ -74,6 +74,7 @@ enum class StellarTarotLayoutResult : uint8
     BoardNotKnown,
     NoBoard,            // nothing equipped
     OutOfBounds,
+    CellIsHole,         // a hole of the board: no card goes there
     CellTaken,
     CellEmpty,
     NoSuchCard,

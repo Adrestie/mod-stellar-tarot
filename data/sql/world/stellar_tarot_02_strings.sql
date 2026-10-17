@@ -154,7 +154,8 @@ INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-stellar-tarot', 74, '[Tarot probe] card {} level {} {} (spell {}): {}'),
 ('mod-stellar-tarot', 75, 'Test: ''{}'' is not a state word, or ''{}'' is not on, off or free.'),
 ('mod-stellar-tarot', 76, 'Test: {} {} ({}): {}.'),
-('mod-stellar-tarot', 77, 'Test: {}: health {}/{}, mana {}/{}, money {}, combat {}, auras {}.');
+('mod-stellar-tarot', 77, 'Test: {}: health {}/{}, mana {}/{}, money {}, combat {}, auras {}.'),
+('mod-stellar-tarot', 78, 'Cell {},{} is a hole of this board: no card goes there.');
 
 DELETE FROM `module_string_locale` WHERE `module` = 'mod-stellar-tarot' AND `id` BETWEEN 61 AND 80;
 INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
@@ -174,7 +175,8 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot', 74, 'frFR', '[Sonde du tarot] carte {} niveau {} {} (sort {}) : {}'),
 ('mod-stellar-tarot', 75, 'frFR', 'Test : « {} » n''est pas un mot d''état, ou « {} » n''est ni on, ni off, ni free.'),
 ('mod-stellar-tarot', 76, 'frFR', 'Test : {} {} ({}) : {}.'),
-('mod-stellar-tarot', 77, 'frFR', 'Test : {} : vie {}/{}, mana {}/{}, argent {}, combat {}, auras {}.');
+('mod-stellar-tarot', 77, 'frFR', 'Test : {} : vie {}/{}, mana {}/{}, argent {}, combat {}, auras {}.'),
+('mod-stellar-tarot', 78, 'frFR', 'La case {},{} est un trou de ce plateau : aucune carte n''y va.');
 
 -- THE OTHER LANGUAGES OF THE CLIENT: German, Spanish (esES and esMX) and Russian,
 -- every string above. Translated from the English and the French (atelier : traductions/chaines_trad.json).
@@ -487,4 +489,8 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot', 1002, 'deDE', 'Jede Kreatur, die Ihr tötet, heilt Euch um {}% Eurer Gesundheit.'),
 ('mod-stellar-tarot', 1002, 'esES', 'Cada criatura que matas te sana un {}% de tu salud.'),
 ('mod-stellar-tarot', 1002, 'esMX', 'Cada criatura que matas te sana un {}% de tu salud.'),
-('mod-stellar-tarot', 1002, 'ruRU', 'Каждое убитое вами существо исцеляет вас на {}% от вашего запаса здоровья.');
+('mod-stellar-tarot', 1002, 'ruRU', 'Каждое убитое вами существо исцеляет вас на {}% от вашего запаса здоровья.'),
+('mod-stellar-tarot',   78, 'deDE', 'Das Feld {},{} ist ein Loch dieses Spielbretts: Dort kommt keine Karte hin.'),
+('mod-stellar-tarot',   78, 'esES', 'La casilla {},{} es un hueco de este tablero: ninguna carta va allí.'),
+('mod-stellar-tarot',   78, 'esMX', 'La casilla {},{} es un hueco de este tablero: ninguna carta va allí.'),
+('mod-stellar-tarot',   78, 'ruRU', 'Клетка {},{} — это дыра на этом поле: туда нельзя положить карту.');

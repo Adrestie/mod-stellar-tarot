@@ -1,8 +1,9 @@
 # mod-stellar-tarot
 
 Cards laid on a board, for AzerothCore 3.3.5a. A card carries a number from
-1 to 9 on each of its four edges; a board is a grid of 2 to 4 rows by 2 to 4
-columns, with a number on every row and every column. Where two edges meet on
+1 to 9 on each of its four edges; a board is a grid of 2 to 5 rows by 2 to 5
+columns, with a number on every row and every column, and sometimes a hole
+inside it. Where two edges meet on
 the same number, both cards wake: the more edges a card matches -- 1 to 4 --
 the stronger or the wider its effect. A crossing of Hades II's arcana cards
 and Final Fantasy VIII's Triple Triad.
@@ -15,8 +16,8 @@ and saves layouts as presets -- the effects: at each level a card applies an
 aura and/or runs a script of the module -- the workbench, shared with the
 other modules, where three cards or three boards become one -- the loot,
 one row per source -- and the cards' art: an illustration and an icon per
-card, composed in the window on a frame. The catalogue holds 372 cards and four
-boards, each card with four levels. **[How to do things with it](docs/HOWTO.md).**
+card, composed in the window on a frame. The catalogue holds 372 cards, each with
+four levels, and 25 boards. **[How to do things with it](docs/HOWTO.md).**
 
 ## Requirements
 
@@ -100,6 +101,13 @@ stand around the grid, two per row and two per column, all of them free to
 differ: a row's left number faces the left edge of its first card and its
 right number the right edge of its last; a column's top number faces the top
 edge of its first card and its bottom number the bottom edge of its last.
+The higher a number, the rarer it is on a board; a 9 seldom appears.
+
+Some boards have a **hole**: an inner cell, never on the rim, where no card
+goes. A hole carries one number, which every card beside it faces on the side
+turned to it -- the card above by its bottom edge, the card on its left by its
+right edge, and so on -- exactly as the rim's numbers are faced. Its four
+sides light up as the rim's numbers do.
 
 A card is laid by dragging it from the deck onto a cell -- a free one, or a
 taken one whose card then gives way -- and taken off by a right-click, or by

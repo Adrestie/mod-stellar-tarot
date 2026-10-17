@@ -161,12 +161,13 @@ inline bool StellarTarotIsTriggerSpell(uint32 spellId)
         || (spellId >= STELLAR_TAROT_SPELL_LOW_FIRST && spellId <= STELLAR_TAROT_SPELL_LOW_LAST);
 }
 
-// A card has four edges and four activation levels; a board has 2 to 4 rows
-// and 2 to 4 columns; every number on an edge or around a board is 1 to 9.
+// A card has four edges and four activation levels; a board has 2 to 5 rows
+// and 2 to 5 columns; every number on an edge, around a board or in one of its
+// holes is 1 to 9.
 constexpr uint8 STELLAR_TAROT_EDGES    = 4;
 constexpr uint8 STELLAR_TAROT_LEVELS   = 4;
 constexpr uint8 STELLAR_TAROT_MIN_SIDE = 2;
-constexpr uint8 STELLAR_TAROT_MAX_SIDE = 4;
+constexpr uint8 STELLAR_TAROT_MAX_SIDE = 5;
 constexpr uint8 STELLAR_TAROT_MIN_NUMBER = 1;
 constexpr uint8 STELLAR_TAROT_MAX_NUMBER = 9;
 
@@ -226,11 +227,21 @@ struct StellarTarotBoard
     uint32 id = 0;
     uint8 rows = 0;
     uint8 cols = 0;
-    std::array<uint8, STELLAR_TAROT_MAX_SIDE> rowLeft   = { 0, 0, 0, 0 };   // [i] faces the left edge of row i's first card
-    std::array<uint8, STELLAR_TAROT_MAX_SIDE> rowRight  = { 0, 0, 0, 0 };   // [i] faces the right edge of row i's last card
-    std::array<uint8, STELLAR_TAROT_MAX_SIDE> colTop    = { 0, 0, 0, 0 };   // [j] faces the top edge of column j's first card
-    std::array<uint8, STELLAR_TAROT_MAX_SIDE> colBottom = { 0, 0, 0, 0 };   // [j] faces the bottom edge of column j's last card
+    std::array<uint8, STELLAR_TAROT_MAX_SIDE> rowLeft   = {};   // [i] faces the left edge of row i's first card
+    std::array<uint8, STELLAR_TAROT_MAX_SIDE> rowRight  = {};   // [i] faces the right edge of row i's last card
+    std::array<uint8, STELLAR_TAROT_MAX_SIDE> colTop    = {};   // [j] faces the top edge of column j's first card
+    std::array<uint8, STELLAR_TAROT_MAX_SIDE> colBottom = {};   // [j] faces the bottom edge of column j's last card
+    // THE HOLES: inner cells that take no card and carry a number instead.
+    // Every card beside a hole faces that number, on the side turned to it.
+    // [row - 1][col - 1]; 0 = an ordinary cell.
+    std::array<std::array<uint8, STELLAR_TAROT_MAX_SIDE>, STELLAR_TAROT_MAX_SIDE> holes = {};
     std::string art;
+
+    // The number of the hole at (row, col), 1-based; 0 when the cell is not a hole.
+    [[nodiscard]] uint8 Hole(uint8 row, uint8 col) const
+    {
+        return (row >= 1 && row <= rows && col >= 1 && col <= cols) ? holes[row - 1][col - 1] : 0;
+    }
 };
 
 struct StellarTarotTag

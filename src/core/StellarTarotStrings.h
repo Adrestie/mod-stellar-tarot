@@ -118,6 +118,7 @@ enum StellarTarotStrings : uint32
     STELLAR_TAROT_STR_TEST_BAD_STATE    = 75,  // '{}' is no state word, or '{}' is not on, off or free
     STELLAR_TAROT_STR_TEST_FIRED        = 76,  // {player} {event} ({n}): {result}
     STELLAR_TAROT_STR_TEST_SNAPSHOT     = 77,  // {player}: health, mana, money, combat, auras
+    STELLAR_TAROT_STR_CELL_HOLE         = 78,  // cell {},{} is a hole of the board
     // 1001 and up: what each script says of itself (mod_stellar_tarot_script).
 };
 

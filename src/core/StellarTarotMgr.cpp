@@ -266,6 +266,35 @@ void StellarTarotMgr::Load()
                 (side == STELLAR_TAROT_SIDE_FIRST ? board.colTop : board.colBottom)[index - 1] = number;
         } while (result->NextRow());
     }
+    // -- the holes: inner cells with a number, where no card goes -------------
+    if (QueryResult result = WorldDatabase.Query(
+        "SELECT board_id, row_idx, col_idx, number FROM mod_stellar_tarot_board_hole"))
+    {
+        do
+        {
+            Field* f = result->Fetch();
+            uint32 const boardId = f[0].Get<uint32>();
+            uint8 const row = f[1].Get<uint8>();
+            uint8 const col = f[2].Get<uint8>();
+            uint8 const number = f[3].Get<uint8>();
+            auto it = _boards.find(boardId);
+            if (it == _boards.end())
+            {
+                LOG_WARN("module", "StellarTarot: hole ignored (board {}): no such board.", boardId);
+                continue;
+            }
+            StellarTarotBoard& board = it->second;
+            // INSIDE THE BOARD ONLY: a hole on the rim would be a notch, and
+            // the rim's own numbers already face that side.
+            if (row < 2 || row >= board.rows || col < 2 || col >= board.cols || !ValidNumber(number))
+            {
+                LOG_WARN("module", "StellarTarot: hole ignored (board {}, cell {},{}, number {}): not an inner cell, "
+                         "or the number is out of range.", boardId, row, col, number);
+                continue;
+            }
+            board.holes[row - 1][col - 1] = number;
+        } while (result->NextRow());
+    }
     for (auto it = _boards.begin(); it != _boards.end();)
     {
         StellarTarotBoard const& board = it->second;
