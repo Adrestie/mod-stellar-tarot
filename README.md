@@ -15,8 +15,8 @@ and saves layouts as presets -- the effects: at each level a card applies an
 aura and/or runs a script of the module -- the workbench, shared with the
 other modules, where three cards or three boards become one -- the loot,
 one row per source -- and the cards' art: an illustration and an icon per
-card, composed in the window on a frame. The cards themselves are a test set
-of twelve. **[How to do things with it](docs/HOWTO.md).**
+card, composed in the window on a frame. The catalogue holds 372 cards and four
+boards, each card with four levels. **[How to do things with it](docs/HOWTO.md).**
 
 ## Requirements
 
@@ -227,12 +227,12 @@ shown behind the window) and its icon (`Cards/<name>_icon.blp`, 128 x 128,
 a square cut from the illustration on the card's subject, framed like the
 game's icons, used in the deck, on the board and while dragging). The card's
 `art` column names the pair, without extension; a card without one shows
-its item's icon. The twelve test cards ship with theirs. The tooling that
+its item's icon. All 372 cards ship with theirs. The tooling that
 makes them is the author's; the guide gives the formats.
 
 ## The identifiers
 
-One block, 87000 to 88999 (tranches 87 and 88 of the WoW-mods register,
+One block, 87000 to 89999 (tranches 87 to 89 of the WoW-mods register,
 [`ID_RANGES.md`](https://github.com/Adrestie/WoW-mods/blob/main/ID_RANGES.md)), one number per asset. They are not settings; when a server
 already uses one of them for something else, the installer says so and
 installs nothing.
@@ -242,7 +242,7 @@ installs nothing.
 | cards (items) | 87001 – 87499 | card N is item 87000 + N |
 | boards (items) | 87501 – 87599 | board B is item 87500 + B |
 | item displays, spell icons | same number as the item | |
-| spells | 88000 – 88999 | 88000 studies a card, 88001 a board; the aura of card N at level L is 88000 + 4·N + (L − 1) |
+| spells | 88000 – 89999 | 88000 studies a card, 88001 a board; the aura of card N at level L is 88000 + 4·N + (L − 1) up to card 197, 89000 + 4·(N − 198) + (L − 1) from card 198 |
 | module strings | keyed by the module's name | never in clash |
 
 ## What is in the repository
