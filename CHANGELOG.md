@@ -12,8 +12,8 @@ The version is the first word of the newest heading.
   loot hook, `.tarot sources`, `StellarTarot.Loot.Enabled` and
   `StellarTarot.Loot.Known` (DynamicLoot does not know accounts: a known card
   may always drop again, as it did by default). The test sources keep their
-  placeholder rate; the one for card 16 now plays on DynamicLoot's
-  WotlkElite family, the rares of Wrath maps outside raids. Without DynamicLoot, a warning at
+  placeholder rate, except the one for the elites of Wrath maps (card 16),
+  dropped. Without DynamicLoot, a warning at
   start-up, and nothing drops. The reserves the cards draw from stay
   (`mod_stellar_tarot_loot_pool`, grey trinkets, gear, herbs, the crate).
 - Installed and removed by the WoW-mods installer, from `installer.json`. The
