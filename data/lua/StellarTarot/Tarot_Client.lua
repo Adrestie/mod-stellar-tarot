@@ -1171,7 +1171,7 @@ end
 -- card's frame with a third of the room it used to have on either side, and
 -- the effects sit under it at the same width. The window follows.
 local TAB_WIDTH, TAB_HEIGHT = 64, 26           -- the deck's tabs
-local CELL, GAP, COLUMNS = 44, 4, 5            -- the deck grid
+local CELL, GAP, COLUMNS = 56, 4, 4            -- the deck grid: four larger cards a row, the width of five
 local DECK_WIDTH = 10 + TAB_WIDTH + 8 + COLUMNS * (CELL + GAP) + 30 + 4
 local BOARD_WIDTH = DECK_WIDTH
 local HAND_WIDTH = 400 + 2 * 11                -- the card frame (400) and its margins
@@ -1191,7 +1191,7 @@ local EDGE_BOX_MATCH = "Interface\\mod-Tarot\\UI\\trapezoid_on"          -- dark
 local EDGE_BOX_PREVIEW = "Interface\\mod-Tarot\\UI\\trapezoid_preview"   -- teal: would match
 local EDGE_BOX_DEPTH = 51 / 64                 -- the trapezoid fills the texture's width and its top 51 rows of 64
 local EDGE_BOX_LONG, EDGE_BOX_SHORT = 30, 12
-local DECK_BOX_LONG, DECK_BOX_SHORT = 20, 9    -- the same trapezoid on a deck icon
+local DECK_BOX_LONG, DECK_BOX_SHORT = 25, 11   -- the same trapezoid on a deck icon
 -- The four ways of drawing the trapezoid, its long base against the edge
 -- it sits on: top as drawn, right, bottom flipped, left.
 local TRAPEZOID_COORDS = {
@@ -2558,7 +2558,7 @@ local function CardButton(i)
         box.bg:SetTexture(EDGE_BOX_TEXTURE)
         box.bg:SetTexCoord(unpack(TRAPEZOID_COORDS[e]))
         local text = box:CreateFontString(nil, "OVERLAY")
-        text:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE")
+        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
         text:SetTextColor(0.95, 0.95, 0.95)
         local nudge = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } }
         text:SetPoint("CENTER", nudge[e][1], nudge[e][2])
