@@ -4971,7 +4971,8 @@ local FUI_DECOUPES = {
 if Progression and Progression.Ajouter and Progression.Kit then
     Progression.Kit.AjouterArt(nil, FUI_DECOUPES)
     S.fui = Progression.Ajouter({
-        cle = TAB_KEY, ordre = 3, icone = "Interface\\mod-Tarot\\Icons\\tab_starfall",
+        -- l'icone de l'aura du tarot (88002, Trade_Engineering), dans la forme des onglets de ForeverUI
+        cle = TAB_KEY, ordre = 3, icone = "Interface\\ForeverUI\\tabicons\\trade_engineering",
         titre = function() return L.title end,
         nomFenetre = function() return L.progression end,
         portrait = "Interface\\mod-Tarot\\UI\\legacy-up-c60-masque",
