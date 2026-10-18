@@ -48,6 +48,9 @@ namespace StellarTarotTutorial
     void Advance(Player* player);
 
     void OnLogout(Player* player);
+
+    // Chaque seconde : une recompense en attente de place dans les sacs se donne des que la place est faite.
+    void OnSecond(Player* player);
 }
 
 #endif

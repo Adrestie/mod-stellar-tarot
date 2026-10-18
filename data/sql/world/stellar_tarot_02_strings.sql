@@ -136,7 +136,7 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot', 1002, 'frFR', 'Chaque créature que vous tuez vous rend {} % de votre santé.');
 
 -- The test bench (.tarot test): ids 61 to 80.
-DELETE FROM `module_string` WHERE `module` = 'mod-stellar-tarot' AND `id` BETWEEN 61 AND 80;
+DELETE FROM `module_string` WHERE `module` = 'mod-stellar-tarot' AND `id` BETWEEN 61 AND 81;
 INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-stellar-tarot', 61, 'Test: {} now has card {} ({}) at level {}, alone, in place of the board. Test values armed: no chance roll, no cooldown.'),
 ('mod-stellar-tarot', 62, 'Test: {} is back to the board. Forced states, hour and probes released.'),
@@ -157,9 +157,10 @@ INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-stellar-tarot', 77, 'Test: {}: health {}/{}, mana {}/{}, money {}, combat {}, auras {}.'),
 ('mod-stellar-tarot', 78, 'Cell {},{} is a hole of this board: no card goes there.'),
 ('mod-stellar-tarot', 79, 'The stellar tarot opens at level {}.'),
-('mod-stellar-tarot', 80, 'Stellar tarot: a new quest is in your quest log.');
+('mod-stellar-tarot', 80, 'Stellar tarot: a new quest is in your quest log.'),
+('mod-stellar-tarot', 81, 'Stellar tarot: make room in your bags to receive the reward of "{}".');
 
-DELETE FROM `module_string_locale` WHERE `module` = 'mod-stellar-tarot' AND `id` BETWEEN 61 AND 80;
+DELETE FROM `module_string_locale` WHERE `module` = 'mod-stellar-tarot' AND `id` BETWEEN 61 AND 81;
 INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot', 61, 'frFR', 'Test : {} porte maintenant la carte {} ({}) au niveau {}, seule, à la place du plateau. Valeurs d''essai armées : ni dé de chance, ni recharge.'),
 ('mod-stellar-tarot', 62, 'frFR', 'Test : {} retrouve son plateau. États forcés, heure et sondes libérés.'),
@@ -180,7 +181,8 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot', 77, 'frFR', 'Test : {} : vie {}/{}, mana {}/{}, argent {}, combat {}, auras {}.'),
 ('mod-stellar-tarot', 78, 'frFR', 'La case {},{} est un trou de ce plateau : aucune carte n''y va.'),
 ('mod-stellar-tarot', 79, 'frFR', 'Le tarot stellaire s''ouvre au niveau {}.'),
-('mod-stellar-tarot', 80, 'frFR', 'Tarot stellaire : une nouvelle quête est dans votre journal de quêtes.');
+('mod-stellar-tarot', 80, 'frFR', 'Tarot stellaire : une nouvelle quête est dans votre journal de quêtes.'),
+('mod-stellar-tarot', 81, 'frFR', 'Tarot stellaire : faites de la place dans vos sacs pour recevoir la récompense de « {} ».');
 
 -- THE OTHER LANGUAGES OF THE CLIENT: German, Spanish (esES and esMX) and Russian,
 -- every string above. Translated from the English and the French (atelier : traductions/chaines_trad.json).
@@ -505,4 +507,8 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot',   80, 'deDE', 'Sternentarot: Eine neue Quest steht in Eurem Questlog.'),
 ('mod-stellar-tarot',   80, 'esES', 'Tarot estelar: hay una nueva misión en tu registro de misiones.'),
 ('mod-stellar-tarot',   80, 'esMX', 'Tarot estelar: hay una nueva misión en tu registro de misiones.'),
-('mod-stellar-tarot',   80, 'ruRU', 'Звёздное Таро: в вашем журнале новое задание.');
+('mod-stellar-tarot',   80, 'ruRU', 'Звёздное Таро: в вашем журнале новое задание.'),
+('mod-stellar-tarot',   81, 'deDE', 'Sternentarot: Schafft Platz in Euren Taschen, um die Belohnung von „{}“ zu erhalten.'),
+('mod-stellar-tarot',   81, 'esES', 'Tarot estelar: haz sitio en tus bolsas para recibir la recompensa de «{}».'),
+('mod-stellar-tarot',   81, 'esMX', 'Tarot estelar: haz sitio en tus bolsas para recibir la recompensa de «{}».'),
+('mod-stellar-tarot',   81, 'ruRU', 'Звёздное Таро: освободите место в сумках, чтобы получить награду за «{}».');

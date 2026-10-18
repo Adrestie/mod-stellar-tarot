@@ -827,6 +827,7 @@ void StellarTarotEffects::OnUpdate(Player* player, uint32 diff)
     clock = 0;
     if (!Sommes().empty())
         RecompterLesSommes(player);
+    StellarTarotTutorial::OnSecond(player);
     // LE BLOC DE MESURE, une fois par seconde et pour lui seul.
     if (Huds().count(player->GetGUID()))
     {

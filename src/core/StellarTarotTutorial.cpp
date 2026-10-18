@@ -159,6 +159,13 @@ namespace
         return player && player->GetSession() ? player->GetSession()->GetAccountId() : 0;
     }
 
+    // le joueur deja prevenu que ses sacs etaient pleins, quete par quete
+    std::set<std::pair<ObjectGuid, uint32>>& Prevenus()
+    {
+        static std::set<std::pair<ObjectGuid, uint32>> prevenus;
+        return prevenus;
+    }
+
     bool Ready(Player const* player)
     {
         return player && player->GetSession() && sStellarTarotMgr->Enabled() && sStellarTarotMgr->TutorialEnabled()
@@ -248,8 +255,22 @@ void StellarTarotTutorial::Advance(Player* player)
         }
         if (player->GetQuestStatus(step) != QUEST_STATUS_COMPLETE)
             return;
-        if (!player->CanRewardQuest(quest, 0, true))
-            return;                         // les sacs sont pleins : la quete attend, terminee
+        // LA RECOMPENSE NE SE DONNE QU'AVEC LA PLACE POUR ELLE (signalement du 2026-10-18 : « pas assez
+        // d'espace dans l'inventaire » et l'objet perdu). Sacs pleins : la quete reste terminee au journal,
+        // le joueur est prevenu une fois, et la mise a jour la rend des que la place est faite.
+        if (!player->CanRewardQuest(quest, 0, false))
+        {
+            if (Prevenus().insert({ player->GetGUID(), step }).second)
+            {
+                std::string titre = quest->GetTitle();
+                if (QuestLocale const* ql = sObjectMgr->GetQuestLocale(step))
+                    ObjectMgr::GetLocaleString(ql->Title, player->GetSession()->GetSessionDbLocaleIndex(), titre);
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(STELLAR_TAROT_MODULE,
+                    STELLAR_TAROT_STR_TUTORIAL_ROOM, titre);
+            }
+            return;
+        }
+        Prevenus().erase({ player->GetGUID(), step });
         player->RewardQuest(quest, 0, player);
         if (step == STEP_MATCH)
         {
@@ -271,4 +292,14 @@ void StellarTarotTutorial::OnLogout(Player* player)
 {
     if (player)
         Opened().erase(player->GetGUID());
+}
+
+void StellarTarotTutorial::OnSecond(Player* player)
+{
+    // seule une quete terminee qui attend sa recompense se regarde ici -- rien d'autre ne lit la base
+    if (!player || !player->GetSession())
+        return;
+    uint32 const step = Current(player);
+    if (step && player->GetQuestStatus(step) == QUEST_STATUS_COMPLETE)
+        Advance(player);
 }

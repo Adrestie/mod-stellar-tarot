@@ -121,6 +121,7 @@ enum StellarTarotStrings : uint32
     STELLAR_TAROT_STR_CELL_HOLE         = 78,  // cell {},{} is a hole of the board
     STELLAR_TAROT_STR_LOCKED            = 79,  // the tarot opens at level {}
     STELLAR_TAROT_STR_TUTORIAL_STEP     = 80,  // a tutorial quest entered the quest log
+    STELLAR_TAROT_STR_TUTORIAL_ROOM     = 81,  // make room in your bags for the reward of {quest}
     // 1001 and up: what each script says of itself (mod_stellar_tarot_script).
 };
 
