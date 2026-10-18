@@ -1655,8 +1655,57 @@ namespace
         // part ne se compte pas dans le score lu ; sans ce rappel, chaque pose
         // la faisait repartir a UN cumul et la ligne ne montait jamais.
         int32 deja = 0;
-        if (Aura const* ancienne = player->GetAura(spellId, caster->GetGUID()))
+        if (Aura* ancienne = player->GetAura(spellId, caster->GetGUID()))
+        {
             deja = int32(ancienne->GetStackAmount());
+            // UN CUMUL DE PLUS, SUR PLACE (demande du 2026-10-18 : les cumuls
+            // de The Fever « ne doivent pas declencher le defilement de
+            // texte »). Retirer puis reposer l'aura faisait partir et revenir
+            // son nom dans le texte defilant a chaque cumul. L'aura reste : sa
+            // propre part est otee du score lu, le cumul monte, le chiffre est
+            // reecrit et la duree repart.
+            if (cumuls > 1)
+            {
+                uint8 const veut = uint8(std::min<int32>(deja + 1, cumuls));
+                int32 nouveau[MAX_SPELL_EFFECTS] = { 0, 0, 0 };
+                bool porte[MAX_SPELL_EFFECTS] = { false, false, false };
+                bool nomme = false;
+                size_t compte = 0;
+                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+                {
+                    if (info->Effects[i].ApplyAuraName != SPELL_AURA_MOD_RATING)
+                        continue;
+                    int32 const cr = FirstRating(info->Effects[i].MiscValue);
+                    AuraEffect const* const effet = ancienne->GetEffect(i);
+                    if (cr < 0 || !effet)
+                        continue;
+                    int32 const part = parts.empty() ? 0
+                                     : parts[std::min<size_t>(compte, parts.size() - 1)];
+                    ++compte;
+                    int32 const own = std::max<int32>(0, int32(player->GetUInt32Value(
+                        uint16(PLAYER_FIELD_COMBAT_RATING_1) + uint16(cr))) - effet->GetAmount());
+                    nouveau[i] = int32(std::llround(double(own) * part / 100.0)) * veut;
+                    nomme = porte[i] = true;
+                }
+                if (!nomme)
+                    return false;
+                if (veut != ancienne->GetStackAmount())
+                    ancienne->SetStackAmount(veut);
+                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+                    if (porte[i])
+                        if (AuraEffect* const effet = ancienne->GetEffect(i))
+                            if (effet->GetAmount() != nouveau[i])
+                                effet->ChangeAmount(nouveau[i]);
+                if (seconds)
+                {
+                    ancienne->SetMaxDuration(seconds * 1000);
+                    ancienne->SetDuration(seconds * 1000);
+                }
+                else
+                    ancienne->RefreshDuration();
+                return true;
+            }
+        }
         player->RemoveAurasDueToSpell(spellId, caster->GetGUID());   // sa part ne compte pas
         int32 bp[MAX_SPELL_EFFECTS] = { 0, 0, 0 };
         bool porte[MAX_SPELL_EFFECTS] = { false, false, false };
