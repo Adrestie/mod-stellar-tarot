@@ -720,7 +720,10 @@ public:
             Say(handler, STELLAR_TAROT_STR_TEST_NO_LEVEL, cardId, level);
             return true;
         }
-        StellarTarotEffects::TestCard(player, cardId, uint8(level), mode && *mode == "cumulative");
+        // « add » / « addcumulative » : la carte s'ajoute au banc au lieu de le remplacer
+        bool const add = mode && (*mode == "add" || *mode == "addcumulative");
+        bool const cumulative = mode && (*mode == "cumulative" || *mode == "addcumulative");
+        StellarTarotEffects::TestCard(player, cardId, uint8(level), cumulative, add);
         Say(handler, STELLAR_TAROT_STR_TEST_CARD, player->GetName(), cardId, sStellarTarotMgr->CardName(cardId), level);
         return true;
     }

@@ -86,6 +86,7 @@ namespace StellarTarotEffects
     bool HeldFor(ObjectGuid who);
 
     void OnCreatureKill(Player* player, Creature* killed);
+    void OnPlayerKill(Player* player, Player* killed);
     void OnUpdate(Player* player, uint32 diff);               // ticks the scripts about once a second
     // Damage about to be dealt by `attacker` to `victim`: the attacker's
     // scripts see it as dealt, the victim's as taken. Either may be a creature.
@@ -236,7 +237,7 @@ namespace StellarTarotEffects
     // values armed; states and the hour forced; every effect that fires written
     // to the log. Held in memory only: a restart forgets it.
     // cumulative: the levels below come too, as the board gives them.
-    void TestCard(Player* player, uint32 cardId, uint8 level, bool cumulative = false);
+    void TestCard(Player* player, uint32 cardId, uint8 level, bool cumulative = false, bool add = false);
     // Back to the board, the game's own states and hour, no probes.
     void TestClear(Player* player);
     // The card level under test, false when the board is in force.

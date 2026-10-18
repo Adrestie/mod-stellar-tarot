@@ -3054,6 +3054,14 @@ namespace
                 || (_event == "kill_humanoid" && killed && killed->GetCreatureType() == CREATURE_TYPE_HUMANOID))
                 Fire(player, killed, killed ? killed->GetMaxHealth() : 0);
         }
+        // UN JOUEUR ENNEMI TUE : « ennemi tue » et « humanoide tue » (un joueur en est un) ; ni boss ni elite.
+        void OnPlayerKill(Player* player, Player* killed) override
+        {
+            if (_action == "loot_item")
+                return;
+            if (_event == "kill" || _event == "kill_humanoid")
+                Fire(player, killed, killed ? killed->GetMaxHealth() : 0);
+        }
         void OnDamageDealt(Player* player, Unit* victim, uint32& damage, bool spell, uint32 school,
                            uint32 spellId) override
         {

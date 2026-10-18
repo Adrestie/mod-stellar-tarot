@@ -77,6 +77,7 @@ public:
             PLAYERHOOK_ON_LOGOUT,
             PLAYERHOOK_ON_LEVEL_CHANGED,
             PLAYERHOOK_ON_CREATURE_KILL,
+            PLAYERHOOK_ON_PVP_KILL,
             PLAYERHOOK_ON_CREATURE_KILLED_BY_PET,
             PLAYERHOOK_ON_UPDATE,
             PLAYERHOOK_ON_PLAYER_ENTER_COMBAT,
@@ -115,6 +116,11 @@ public:
     void OnPlayerCreatureKill(Player* killer, Creature* killed) override
     {
         StellarTarotEffects::OnCreatureKill(killer, killed);
+    }
+    // UN JOUEUR ENNEMI TUE (essais JcJ du 2026-10-18) : « ennemi tue » vaut aussi pour lui.
+    void OnPlayerPVPKill(Player* killer, Player* killed) override
+    {
+        StellarTarotEffects::OnPlayerKill(killer, killed);
     }
     // A pet or a totem landing the killing blow does not fire the previous
     // hook.

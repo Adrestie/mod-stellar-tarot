@@ -98,6 +98,8 @@ public:
     // The game's events, while the level is active.
     virtual void OnTick(Player* /*player*/) { }                                  // about once a second
     virtual void OnCreatureKill(Player* /*player*/, Creature* /*killed*/) { }
+    // Un joueur ennemi tue (JcJ) : seules les lignes « ennemi tue » y repondent.
+    virtual void OnPlayerKill(Player* /*player*/, Player* /*killed*/) { }
     // Damage the player is about to deal / take. `damage` may be changed.
     // A white blow comes twice (StellarTarotEffects::Stage): before its roll,
     // for what changes its damage, then once it lands, for the rest.

@@ -43,6 +43,7 @@
 #include "Opcodes.h"
 #include "WorldPacket.h"
 #include <cmath>
+#include <tuple>
 #include <list>
 #include <set>
 #include <map>
@@ -73,6 +74,9 @@ namespace
         uint32 cardId = 0;
         uint8 level = 0;
         bool cumulative = false;        // the levels below come too
+        // LES CARTES AJOUTEES (`.tarot test card ... add`) : un banc de plusieurs cartes, pour
+        // eprouver les combinaisons sans plateau -- carte, niveau, niveaux inferieurs compris.
+        std::vector<std::tuple<uint32, uint8, bool>> extra;
         bool trace = false;
         std::map<std::string, int8> forced;
     };
@@ -151,11 +155,15 @@ namespace
         auto bench = Benches().find(Guid(player));
         if (bench != Benches().end() && bench->second.cardId)
         {
-            StellarTarotCard const* card = sStellarTarotMgr->Card(bench->second.cardId);
-            uint8 const level = bench->second.level;
-            if (card && level >= 1 && level <= card->effects.size())
+            std::vector<std::tuple<uint32, uint8, bool>> banc = { { bench->second.cardId, bench->second.level,
+                                                                     bench->second.cumulative } };
+            banc.insert(banc.end(), bench->second.extra.begin(), bench->second.extra.end());
+            for (auto const& [cardId, level, cumulative] : banc)
             {
-                uint8 const first = (bench->second.cumulative && card->cumulative) ? 1 : level;
+                StellarTarotCard const* card = sStellarTarotMgr->Card(cardId);
+                if (!card || level < 1 || level > card->effects.size())
+                    continue;
+                uint8 const first = (cumulative && card->cumulative) ? 1 : level;
                 for (uint8 l = first; l <= level; ++l)
                 {
                     StellarTarotActiveEffect active;
@@ -343,6 +351,18 @@ void StellarTarotEffects::OnCreatureKill(Player* player, Creature* killed)
             r.script->OnCreatureKill(player, killed);
 }
 
+void StellarTarotEffects::OnPlayerKill(Player* player, Player* killed)
+{
+    if (!player || !killed || player == killed)
+        return;
+    auto it = Everyone().find(Guid(player));
+    if (it == Everyone().end())
+        return;
+    for (Running& r : it->second)
+        if (r.script)
+            r.script->OnPlayerKill(player, killed);
+}
+
 std::vector<StellarTarotActiveEffect> StellarTarotEffects::Active(Player* player)
 {
     std::vector<StellarTarotActiveEffect> out;
@@ -360,14 +380,20 @@ std::vector<StellarTarotActiveEffect> StellarTarotEffects::Active(Player* player
 // The test bench.
 // ---------------------------------------------------------------------------
 
-void StellarTarotEffects::TestCard(Player* player, uint32 cardId, uint8 level, bool cumulative)
+void StellarTarotEffects::TestCard(Player* player, uint32 cardId, uint8 level, bool cumulative, bool add)
 {
     if (!player)
         return;
     Bench& bench = Benches()[Guid(player)];
-    bench.cardId = cardId;
-    bench.level = level;
-    bench.cumulative = cumulative;
+    if (add && bench.cardId)
+        bench.extra.emplace_back(cardId, level, cumulative);
+    else
+    {
+        bench.cardId = cardId;
+        bench.level = level;
+        bench.cumulative = cumulative;
+        bench.extra.clear();
+    }
     Refresh(player);
 }
 
