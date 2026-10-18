@@ -1596,8 +1596,21 @@ public:
         std::string spellCrit;
         for (uint8 school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
             spellCrit += (school ? "," : "") + tenths(player->GetFloatValue(PLAYER_SPELL_CRIT_PERCENTAGE1 + school));
-        extra += " | mult " + pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE)) + "," +
-                 pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN)) + "," +
+        // Par ecole, la plus touchee : les sommes du module sont posees ecole
+        // par ecole (StellarTarotEffects.cpp), le produit de tout les compterait sept fois.
+        auto parEcole = [player](AuraType type)
+        {
+            float retenu = 1.0f;
+            for (uint8 ecole = SPELL_SCHOOL_NORMAL; ecole < MAX_SPELL_SCHOOL; ++ecole)
+            {
+                float const m = player->GetTotalAuraMultiplierByMiscMask(type, 1u << ecole);
+                if (std::fabs(m - 1.0f) > std::fabs(retenu - 1.0f))
+                    retenu = m;
+            }
+            return retenu;
+        };
+        extra += " | mult " + pct(parEcole(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE)) + "," +
+                 pct(parEcole(SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN)) + "," +
                  pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_MELEE_DAMAGE_TAKEN_PCT)) + "," +
                  pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALING_DONE_PERCENT)) + "," +
                  pct(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALING_PCT)) +

@@ -567,21 +567,28 @@ bool StellarTarotEffects::ToggleHud(Player* player)
 }
 
 // ---------------------------------------------------------------------------
-// LES POURCENTAGES DE CARACTERISTIQUES S'ADDITIONNENT, SUR LE TOTAL (demande
-// du 2026-10-18 : « si j'ai 100 d'intel et que j'ai 4 effets +20, +2%, +3%,
-// +4%, il faut faire 120+9% »). Le coeur ne sait pas le faire : l'aura 80 ne
-// porte que sur la caracteristique de BASE (race et niveau, sans
-// l'equipement : 3 % de l'intelligence d'un niveau 2 n'y font rien), et les
-// auras 80 comme 137 se MULTIPLIENT entre elles.
+// LES POURCENTAGES DES CARTES S'ADDITIONNENT (demandes du 2026-10-18 : « si
+// j'ai 100 d'intel et que j'ai 4 effets +20, +2%, +3%, +4%, il faut faire
+// 120+9% », puis « c'est vrai pour tous les bonus en % (sauf vitesse de
+// deplacement a pied ou a monture) »). Le coeur ne sait pas le faire : il
+// MULTIPLIE les pourcentages d'un meme genre (`GetTotalAuraMultiplier`) ou
+// n'en garde que le plus fort (soins recus, nage) ; et l'aura 80 ne porte que
+// sur la caracteristique de BASE (race et niveau, sans l'equipement).
 //
 // Le calcul revient donc au module, comme pour les ralentissements :
-//   - au demarrage, les effets 80 et 137 des sorts du module deviennent
-//     inertes (aura 299, sans gestionnaire) -- ils gardent leur montant, que
-//     les lignes de cartes reglent comme avant ;
-//   - le module SOMME ces montants par caracteristique (misc -1 : les cinq) et
-//     pose la somme sur deux auras porteuses (STAT_CARRIER_*), des 137 : un
-//     pourcentage du total, equipement et bonus fixes compris. Un 137 du jeu
-//     (Benediction des rois) s'y multiplie toujours, selon la regle du jeu.
+//   - LES PORTEURS (STELLAR_TAROT_SUM_FIRST..LAST) : des auras passives du
+//     module, jamais envoyees au client, un effet par ATOME -- une
+//     caracteristique, une ecole, une ressource. Leur table est dans les sorts
+//     eux-memes (le generateur l'ecrit) : le module la lit au demarrage ;
+//   - au demarrage, les effets des sorts du module dont un porteur couvre le
+//     genre deviennent inertes (aura 299, sans gestionnaire) -- ils gardent
+//     leur montant, que les lignes de cartes reglent comme avant. Les 80 vont
+//     aux porteurs 137 : un pourcentage du TOTAL, equipement compris ;
+//   - le module SOMME ces montants par atome et pose chaque somme sur son
+//     porteur. Un seul porteur par atome : rien ne s'y multiplie, sinon un
+//     pourcentage du jeu (Benediction des rois), selon la regle du jeu. Un
+//     sort a plusieurs ecoles (Eclair de givrefeu) voit deux atomes : la
+//     seule limite de la decoupe.
 //
 // Le recompte se fait a la mise a jour du joueur, jamais dans les crochets
 // d'aura : poser ou retirer une aura pendant que le coeur parcourt les
@@ -591,17 +598,48 @@ bool StellarTarotEffects::ToggleHud(Player* player)
 // ---------------------------------------------------------------------------
 namespace
 {
-    constexpr uint32 STAT_CARRIER_PHYSICAL = 88003;   // effets : Force, Agilite, Endurance
-    constexpr uint32 STAT_CARRIER_MENTAL   = 87709;   // effets : Intelligence, Esprit
+    constexpr uint32 STELLAR_TAROT_SUM_FIRST = 89986;
+    constexpr uint32 STELLAR_TAROT_SUM_LAST  = 89999;
 
-    // sort du module -> ses effets en % : (indice de l'effet, caracteristique ou -1)
-    std::map<uint32, std::vector<std::pair<uint8, int32>>>& StatPercents()
+    // Les genres dont le misc est un masque d'ecoles : un atome par ecole.
+    bool ParEcole(uint32 aura)
     {
-        static std::map<uint32, std::vector<std::pair<uint8, int32>>> sorts;
+        return aura == SPELL_AURA_MOD_DAMAGE_PERCENT_DONE || aura == SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN
+            || aura == SPELL_AURA_MOD_RESISTANCE_PCT;
+    }
+
+    // Un atome : (genre, misc) -> son porteur.
+    struct Atome { uint32 aura; int32 misc; uint32 sort; uint8 effet; };
+
+    std::vector<Atome>& Atomes()
+    {
+        static std::vector<Atome> atomes;
+        return atomes;
+    }
+
+    // sort du module -> ses effets sommes : (indice de l'effet, atomes couverts)
+    std::map<uint32, std::vector<std::pair<uint8, std::vector<uint16>>>>& Sommes()
+    {
+        static std::map<uint32, std::vector<std::pair<uint8, std::vector<uint16>>>> sorts;
         return sorts;
     }
 
-    std::set<ObjectGuid>& StatsDirty()
+    // UN MULTIPLICATEUR PAR ECOLE : les sommes du module sont posees ecole par
+    // ecole, et le produit de toutes les auras compterait chaque carte sept
+    // fois. Le chiffre montre est celui de l'ecole la plus touchee.
+    float ParEcoleLaPlusTouchee(Unit* who, AuraType type)
+    {
+        float retenu = 1.0f;
+        for (uint8 ecole = SPELL_SCHOOL_NORMAL; ecole < MAX_SPELL_SCHOOL; ++ecole)
+        {
+            float const m = who->GetTotalAuraMultiplierByMiscMask(type, 1u << ecole);
+            if (std::fabs(m - 1.0f) > std::fabs(retenu - 1.0f))
+                retenu = m;
+        }
+        return retenu;
+    }
+
+    std::set<ObjectGuid>& SommesAFaire()
     {
         static std::set<ObjectGuid> dirty;
         return dirty;
@@ -609,106 +647,156 @@ namespace
 
     bool PorteUnPourcentage(uint32 spellId)
     {
-        return StatPercents().count(spellId) != 0;
+        return Sommes().count(spellId) != 0;
     }
 
-    void RecompterLesPourcentages(Player* player)
+    // Les atomes qu'un effet de carte couvre ; vide si aucun porteur n'a son
+    // genre, ou s'il en manque un pour une part de son misc.
+    std::vector<uint16> Couverts(uint32 aura, int32 misc)
     {
-        int32 somme[MAX_STATS] = { 0, 0, 0, 0, 0 };
+        if (aura == SPELL_AURA_MOD_PERCENT_STAT)
+            aura = SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE;
+        std::vector<uint16> couverts;
+        int32 reste = misc;
+        bool genre = false;
+        for (uint16 i = 0; i < Atomes().size(); ++i)
+        {
+            Atome const& a = Atomes()[i];
+            if (a.aura != aura)
+                continue;
+            genre = true;
+            bool prend;
+            if (ParEcole(aura))
+            {
+                prend = (misc & a.misc) != 0;
+                reste &= ~a.misc;
+            }
+            else if (aura == SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE)
+                prend = misc == -1 || misc == a.misc;
+            else
+                prend = misc == a.misc;
+            if (prend)
+                couverts.push_back(i);
+        }
+        if (!genre || (ParEcole(aura) && reste != 0))
+            return {};
+        if (aura == SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE && misc == -1 && couverts.size() != MAX_STATS)
+            return {};
+        return couverts;
+    }
+
+    void RecompterLesSommes(Player* player)
+    {
+        std::vector<int32> somme(Atomes().size(), 0);
         for (auto const& [id, pose] : player->GetAppliedAuras())
         {
-            auto const it = StatPercents().find(id);
-            if (it == StatPercents().end() || !pose || pose->GetRemoveMode() != AURA_REMOVE_NONE)
+            auto const it = Sommes().find(id);
+            if (it == Sommes().end() || !pose || pose->GetRemoveMode() != AURA_REMOVE_NONE)
                 continue;
             Aura* const aura = pose->GetBase();
-            for (auto const& [indice, stat] : it->second)
+            // « Avec un bouclier » : le coeur exige l'objet au moment du coup
+            // (Unit.cpp, HasItemFitToSpellRequirements) ; la somme aussi.
+            SpellInfo const* const info = aura->GetSpellInfo();
+            if (info->EquippedItemClass != -1 && !player->HasItemFitToSpellRequirements(info))
+                continue;
+            for (auto const& [indice, atomes] : it->second)
             {
                 if (!pose->HasEffect(indice))
                     continue;
                 AuraEffect const* const effet = aura->GetEffect(indice);
                 int32 const montant = effet ? effet->GetAmount() : 0;
-                for (int32 s = STAT_STRENGTH; s < MAX_STATS; ++s)
-                    if (stat == s || stat == -1)
-                        somme[s] += montant;
+                for (uint16 a : atomes)
+                    somme[a] += montant;
             }
         }
-        struct Porteur { uint32 sort; std::vector<uint8> stats; };
-        static Porteur const porteurs[] = {
-            { STAT_CARRIER_PHYSICAL, { STAT_STRENGTH, STAT_AGILITY, STAT_STAMINA } },
-            { STAT_CARRIER_MENTAL,   { STAT_INTELLECT, STAT_SPIRIT } },
-        };
-        for (Porteur const& p : porteurs)
+        // Porteur par porteur : pose s'il a une somme, retire s'il n'en a plus.
+        for (uint32 sort = STELLAR_TAROT_SUM_FIRST; sort <= STELLAR_TAROT_SUM_LAST; ++sort)
         {
-            bool utile = false;
-            for (uint8 s : p.stats)
-                utile = utile || somme[s] != 0;
-            Aura* aura = player->GetAura(p.sort, player->GetGUID());
+            bool utile = false, connu = false;
+            for (uint16 i = 0; i < Atomes().size(); ++i)
+                if (Atomes()[i].sort == sort)
+                {
+                    connu = true;
+                    utile = utile || somme[i] != 0;
+                }
+            if (!connu)
+                continue;
+            Aura* aura = player->GetAura(sort, player->GetGUID());
             if (!utile)
             {
                 if (aura)
-                    player->RemoveAurasDueToSpell(p.sort);
+                    player->RemoveAurasDueToSpell(sort);
                 continue;
             }
-            if (!aura && sSpellMgr->GetSpellInfo(p.sort))
-                aura = player->AddAura(p.sort, player);
+            if (!aura)
+                aura = player->AddAura(sort, player);
             if (!aura)
                 continue;
-            for (uint8 i = 0; i < p.stats.size(); ++i)
-                if (AuraEffect* const effet = aura->GetEffect(i))
-                    if (effet->GetAmount() != somme[p.stats[i]])
-                        effet->ChangeAmount(somme[p.stats[i]]);
+            for (uint16 i = 0; i < Atomes().size(); ++i)
+                if (Atomes()[i].sort == sort)
+                    if (AuraEffect* const effet = aura->GetEffect(Atomes()[i].effet))
+                        if (effet->GetAmount() != somme[i])
+                            effet->ChangeAmount(somme[i]);
         }
     }
 }
 
 void StellarTarotEffects::InitStatPercents()
 {
-    StatPercents().clear();
+    Atomes().clear();
+    Sommes().clear();
+    for (uint32 sort = STELLAR_TAROT_SUM_FIRST; sort <= STELLAR_TAROT_SUM_LAST; ++sort)
+        if (SpellInfo const* const info = sSpellMgr->GetSpellInfo(sort))
+            for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            {
+                SpellEffectInfo const& e = info->GetEffect(SpellEffIndex(i));
+                if (e.Effect == SPELL_EFFECT_APPLY_AURA && e.ApplyAuraName != SPELL_AURA_NONE)
+                    Atomes().push_back({ uint32(e.ApplyAuraName), e.MiscValue, sort, i });
+            }
     uint32 inertes = 0;
-    for (uint32 id = STELLAR_TAROT_CARD_ITEM_BASE; id <= uint32(STELLAR_TAROT_SPELL_LAST); ++id)
+    for (uint32 id = STELLAR_TAROT_CARD_ITEM_BASE; id < STELLAR_TAROT_SUM_FIRST; ++id)
     {
-        if (id == STAT_CARRIER_PHYSICAL || id == STAT_CARRIER_MENTAL)
-            continue;
         SpellInfo const* const info = sSpellMgr->GetSpellInfo(id);
         if (!info)
             continue;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
             SpellEffectInfo const& e = info->GetEffect(SpellEffIndex(i));
-            if (e.Effect != SPELL_EFFECT_APPLY_AURA
-                || (e.ApplyAuraName != SPELL_AURA_MOD_PERCENT_STAT
-                    && e.ApplyAuraName != SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE))
+            if (e.Effect != SPELL_EFFECT_APPLY_AURA)
                 continue;
-            StatPercents()[id].emplace_back(i, e.MiscValue);
+            std::vector<uint16> couverts = Couverts(uint32(e.ApplyAuraName), e.MiscValue);
+            if (couverts.empty())
+                continue;
+            Sommes()[id].emplace_back(i, std::move(couverts));
             // Le seul endroit ou le module reecrit un sort charge : l'effet
-            // garde son montant, il ne touche plus aux caracteristiques.
+            // garde son montant, il n'agit plus de lui-meme.
             const_cast<SpellInfo*>(info)->_GetEffect(SpellEffIndex(i)).ApplyAuraName = SPELL_AURA_299;
             ++inertes;
         }
     }
-    LOG_INFO("module", "StellarTarot: {} stat percentage effects in {} spells are summed by the module.",
-             inertes, StatPercents().size());
+    LOG_INFO("module", "StellarTarot: {} percentage effects in {} spells are summed by the module, on {} carrier atoms.",
+             inertes, Sommes().size(), Atomes().size());
 }
 
 void StellarTarotEffects::MarkStats(Player* player)
 {
     if (player)
-        StatsDirty().insert(player->GetGUID());
+        SommesAFaire().insert(player->GetGUID());
 }
 
 void StellarTarotEffects::OnUpdate(Player* player, uint32 diff)
 {
     if (!player || !player->IsInWorld())
         return;
-    if (!StatPercents().empty() && StatsDirty().erase(player->GetGUID()))
-        RecompterLesPourcentages(player);
+    if (!Sommes().empty() && SommesAFaire().erase(player->GetGUID()))
+        RecompterLesSommes(player);
     uint32& clock = Clocks()[Guid(player)];
     clock += diff;
     if (clock < 1000)
         return;
     clock = 0;
-    if (!StatPercents().empty())
-        RecompterLesPourcentages(player);
+    if (!Sommes().empty())
+        RecompterLesSommes(player);
     // LE BLOC DE MESURE, une fois par seconde et pour lui seul.
     if (Huds().count(player->GetGUID()))
     {
@@ -717,8 +805,8 @@ void StellarTarotEffects::OnUpdate(Player* player, uint32 diff)
         {
             bloc += "	" + std::string(clef) + "=" + std::to_string(valeur);
         };
-        ajoute("dmgdone", EnPourCent(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE)));
-        ajoute("dmgtaken", EnPourCent(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN)));
+        ajoute("dmgdone", EnPourCent(ParEcoleLaPlusTouchee(player, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE)));
+        ajoute("dmgtaken", EnPourCent(ParEcoleLaPlusTouchee(player, SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN)));
         ajoute("meleetaken", EnPourCent(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_MELEE_DAMAGE_TAKEN_PCT)));
         ajoute("healdone", EnPourCent(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALING_DONE_PERCENT)));
         ajoute("healtaken", EnPourCent(player->GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALING_PCT)));
