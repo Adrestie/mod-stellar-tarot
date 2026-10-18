@@ -3834,20 +3834,23 @@ namespace
             Pay(player);
         }
         // Le revers en aura a lui : il monte et tombe avec le bienfait.
-        void LayDebuff(Player* player)
+        void LayDebuff(Player* player, int32 secondes = 0)
         {
             if (!_debuffSpell)
                 return;
+            // la plaie dure ce que dure le bienfait, rallonge d'une ligne `stacklong` comprise
+            if (!secondes)
+                secondes = StackDuration(player, uint32(_debuffSpell)) ? StackDuration(player, uint32(_debuffSpell)) : _a;
             uint32 const mal = uint32(_debuffSpell);
             Aura* plaie = player->GetAura(mal, player->GetGUID());
             if (!plaie)
                 plaie = player->AddAura(mal, player);
             else if (_b > 1 && plaie->GetStackAmount() < uint8(_b))
                 plaie->ModStackAmount(1);
-            if (plaie && _a)
+            if (plaie && secondes)
             {
-                plaie->SetMaxDuration(_a * 1000);
-                plaie->SetDuration(_a * 1000);
+                plaie->SetMaxDuration(secondes * 1000);
+                plaie->SetDuration(secondes * 1000);
             }
         }
         void Do(Player* player, Unit* other, uint32 amount)
@@ -3908,7 +3911,7 @@ namespace
                     aura->SetDuration(duree * 1000);
                 }
                 if (A == "aura")
-                    LayDebuff(player);
+                    LayDebuff(player, duree);
                 // CE QUI VIENT APRES. La carte peut etre retiree entre-temps :
                 // la seconde phase se jouera alors jusqu'a son terme, au plus
                 // quelques secondes.
