@@ -2142,6 +2142,9 @@ namespace
         return false;
     }
 
+    // La recharge propre d'une ligne qui se garde d'une connexion a l'autre.
+    constexpr int32 ICD_PERSISTANTE = 300;
+
     class Proc : public StellarTarotScript
     {
     public:
@@ -3664,8 +3667,20 @@ namespace
             bool const armed = StellarTarotEffects::Armed(player);
             if (!armed && !_coreIcd && _icd && _last && nowMs - _last < uint32(_icd) * 1000)
                 return false;
+            // UNE LONGUE RECHARGE SURVIT A LA DECONNEXION (demande du
+            // 2026-10-18 : The Fortune N1, « 2h d'ICD (ne doit pas etre
+            // reinitialise apres une deconnexion) »). Le compte du module vit
+            // avec la ligne et repart a zero a chaque connexion ; a partir de
+            // cinq minutes, la recharge est aussi posee sur le sort du niveau,
+            // comme une recharge de sort du jeu, que le coeur sauvegarde a la
+            // deconnexion et rend a la connexion (character_spell_cooldown).
+            bool const longue = !_coreIcd && _icd >= ICD_PERSISTANTE;
+            if (!armed && longue && player->HasSpellCooldown(_spellId))
+                return false;
             if (!armed && !_coreChance && _chance < 1000 && int32(urand(1, 1000)) > _chance)
                 return false;
+            if (longue)
+                player->AddSpellCooldown(_spellId, 0, uint32(_icd) * IN_MILLISECONDS);
             _last = nowMs;
             StellarTarotEffects::Probe(player, _spellId, "proc " + _event + " -> " + _action);
             return true;
