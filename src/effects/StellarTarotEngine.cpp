@@ -1710,6 +1710,47 @@ namespace
         return true;
     }
 
+    // LA PART DES SCORES TENUE A JOUR SANS RETIRER L'AURA (signalement du
+    // 2026-10-18 : « Astrolabe a un soucis, l'aura est appliquee et disparait
+    // en boucle »). Une ligne a etat la relisait a chaque battement par
+    // LayRatingShare, qui retire l'aura et la repose : une pose et un depart
+    // par seconde. Ici, l'aura deja posee garde sa place : sa propre part est
+    // otee du score lu, et seul un chiffre qui bouge est reecrit en place.
+    // Absente, elle est posee comme avant.
+    void TenirRatingShare(Player* player, uint32 spellId, std::vector<int32> const& parts)
+    {
+        Aura* const aura = player->GetAura(spellId, player->GetGUID());
+        SpellInfo const* const info = sSpellMgr->GetSpellInfo(spellId);
+        if (!aura || !info || aura->GetStackAmount() > 1)
+        {
+            LayRatingShare(player, spellId, parts, 0);
+            return;
+        }
+        int32 veut[MAX_SPELL_EFFECTS] = { 0, 0, 0 };
+        uint8 masque = 0;
+        bool bouge = false;
+        size_t compte = 0;
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            if (info->Effects[i].ApplyAuraName != SPELL_AURA_MOD_RATING)
+                continue;
+            int32 const cr = FirstRating(info->Effects[i].MiscValue);
+            AuraEffect const* const effet = aura->GetEffect(i);
+            if (cr < 0 || !effet)
+                continue;
+            int32 const part = parts.empty() ? 0 : parts[std::min<size_t>(compte, parts.size() - 1)];
+            ++compte;
+            int32 const sienne = effet->GetAmount();
+            int32 const own = std::max<int32>(0, int32(player->GetUInt32Value(
+                uint16(PLAYER_FIELD_COMBAT_RATING_1) + uint16(cr))) - sienne);
+            veut[i] = int32(std::llround(double(own) * part / 100.0));
+            masque |= uint8(1 << i);
+            bouge = bouge || veut[i] != sienne;
+        }
+        if (bouge)
+            ReglerAura(player, spellId, veut, masque);
+    }
+
     // THE DURATIONS A STACKLONG LINE GIVES: per character, spell -> seconds.
     // A proc line that lays one of these auras refreshes it to this duration.
     std::map<uint32, std::map<uint32, int32>>& StackDurations()
@@ -2016,7 +2057,7 @@ namespace
             // reposee quand le chiffre bouge.
             if (_ratingPct)
             {
-                LayRatingShare(player, _spellId, _ratingParts, 0);
+                TenirRatingShare(player, _spellId, _ratingParts);
                 return;
             }
             // UNE PART DE LA PUISSANCE DES SORTS, de meme : l'aura est retiree
