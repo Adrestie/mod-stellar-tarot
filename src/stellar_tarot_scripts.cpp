@@ -40,6 +40,7 @@
 #include "StellarTarotEffects.h"
 #include "StellarTarotLoot.h"
 #include "StellarTarotMgr.h"
+#include "StellarTarotTutorial.h"
 
 #include <algorithm>
 
@@ -103,14 +104,23 @@ public:
             PLAYERHOOK_CAN_AREA_EXPLORE_AND_OUTDOOR
         }) { }
 
-    void OnPlayerLogin(Player* player) override { StellarTarotEffects::OnLogin(player); }
-    void OnPlayerLogout(Player* player) override { StellarTarotEffects::OnLogout(player); }
+    void OnPlayerLogin(Player* player) override
+    {
+        StellarTarotEffects::OnLogin(player);
+        StellarTarotTutorial::Offer(player);
+    }
+    void OnPlayerLogout(Player* player) override
+    {
+        StellarTarotEffects::OnLogout(player);
+        StellarTarotTutorial::OnLogout(player);
+    }
 
     // The statistics "per level of the player" are auras scaled by the level
     // at the time they are applied: a new level applies them again.
     void OnPlayerLevelChanged(Player* player, uint8 /*oldLevel*/) override
     {
         StellarTarotEffects::OnLevelChanged(player);
+        StellarTarotTutorial::Offer(player);
     }
 
     void OnPlayerCreatureKill(Player* killer, Creature* killed) override

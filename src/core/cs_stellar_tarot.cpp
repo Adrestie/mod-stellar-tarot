@@ -90,6 +90,7 @@
 #include "StellarTarotLoot.h"
 #include "StellarTarotMgr.h"
 #include "StellarTarotStrings.h"
+#include "StellarTarotTutorial.h"
 #include "WorldSession.h"
 
 using namespace Acore::ChatCommands;
@@ -132,6 +133,7 @@ public:
             // SEC_PLAYER: the paths of the interface (through RunCommand) --
             // every rule is applied inside.
             { "study",  HandleStudyCommand,  SEC_PLAYER,        Console::No  },
+            { "open",   HandleOpenCommand,   SEC_PLAYER,        Console::No  },
             { "hud",    HandleHudCommand,    SEC_PLAYER,        Console::No  },
             { "binder", HandleBinderCommand, SEC_GAMEMASTER,    Console::Yes },
             { "board",  HandleBoardCommand,  SEC_PLAYER,        Console::No  },
@@ -194,6 +196,27 @@ public:
     static Player* Self(ChatHandler* handler)
     {
         return handler->GetSession() ? handler->GetSession()->GetPlayer() : nullptr;
+    }
+
+    // UN GESTE DU TAROT : le joueur, s'il a le niveau qui l'ouvre (StellarTarot.UnlockLevel) -- sinon le
+    // refus, en rouge au milieu de l'ecran.
+    static Player* Ouvert(ChatHandler* handler)
+    {
+        Player* player = Self(handler);
+        if (player && !StellarTarotTutorial::Unlocked(player))
+        {
+            SayError(handler, STELLAR_TAROT_STR_LOCKED, sStellarTarotMgr->UnlockLevel());
+            return nullptr;
+        }
+        return player;
+    }
+
+    // La fenetre du tarot s'ouvre (l'interface l'annonce) : l'etape du tutoriel qui la demande.
+    static bool HandleOpenCommand(ChatHandler* handler)
+    {
+        if (Player* player = Ouvert(handler))
+            StellarTarotTutorial::OnOpen(player);
+        return true;
     }
 
     // The numbers of one axis, both sides: "1/7-4/4-8/2" for three rows read
@@ -275,7 +298,7 @@ public:
 
     static bool HandleStudyCommand(ChatHandler* handler, uint32 entry)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         bool isBoard = false;
@@ -298,6 +321,7 @@ public:
                     isBoard ? sStellarTarotMgr->BoardName(id) : sStellarTarotMgr->CardName(id));
                 break;
         }
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 
@@ -375,7 +399,7 @@ public:
 
     static bool HandleBoardCommand(ChatHandler* handler, uint32 boardId)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         if (Refused(handler, StellarTarotLayouts::Equip(player, boardId), boardId))
@@ -385,12 +409,13 @@ public:
             Say(handler, STELLAR_TAROT_STR_BOARD_EQUIPPED, sStellarTarotMgr->BoardName(boardId));
         else
             Say(handler, STELLAR_TAROT_STR_BOARD_REMOVED);
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 
     static bool HandlePlaceCommand(ChatHandler* handler, uint32 row, uint32 col, uint32 cardId)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         if (row > STELLAR_TAROT_MAX_SIDE || col > STELLAR_TAROT_MAX_SIDE)
@@ -403,12 +428,13 @@ public:
             Say(handler, STELLAR_TAROT_STR_REPLACED, sStellarTarotMgr->CardName(cardId), sStellarTarotMgr->CardName(replaced), row, col);
         else
             Say(handler, STELLAR_TAROT_STR_PLACED, sStellarTarotMgr->CardName(cardId), row, col);
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 
     static bool HandleMoveCommand(ChatHandler* handler, uint32 fromRow, uint32 fromCol, uint32 toRow, uint32 toCol)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         if (fromRow > STELLAR_TAROT_MAX_SIDE || fromCol > STELLAR_TAROT_MAX_SIDE)
@@ -426,12 +452,13 @@ public:
             Say(handler, STELLAR_TAROT_STR_SWAPPED, sStellarTarotMgr->CardName(cardId), sStellarTarotMgr->CardName(swappedWith));
         else
             Say(handler, STELLAR_TAROT_STR_MOVED, sStellarTarotMgr->CardName(cardId), toRow, toCol);
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 
     static bool HandleRemoveCommand(ChatHandler* handler, uint32 row, uint32 col)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         if (row > STELLAR_TAROT_MAX_SIDE || col > STELLAR_TAROT_MAX_SIDE)
@@ -441,17 +468,19 @@ public:
             return true;
         StellarTarotEffects::Refresh(player);
         Say(handler, STELLAR_TAROT_STR_REMOVED, sStellarTarotMgr->CardName(cardId), row, col);
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 
     static bool HandleClearCommand(ChatHandler* handler)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         StellarTarotLayouts::Clear(player);
         StellarTarotEffects::Refresh(player);
         Say(handler, STELLAR_TAROT_STR_CLEARED);
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 
@@ -469,7 +498,7 @@ public:
 
     static bool HandlePresetLoadCommand(ChatHandler* handler, uint32 presetId)
     {
-        Player* player = Self(handler);
+        Player* player = Ouvert(handler);
         if (!player)
             return true;
         std::string name;
@@ -478,6 +507,7 @@ public:
             return true;
         StellarTarotEffects::Refresh(player);
         Say(handler, STELLAR_TAROT_STR_PRESET_LOADED, name, laid, skipped);
+        StellarTarotTutorial::Advance(player);
         return true;
     }
 

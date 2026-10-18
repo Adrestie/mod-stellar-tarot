@@ -262,6 +262,8 @@ public:
     [[nodiscard]] bool Enabled() const { return _enabled; }
     // L'instrument de mesure est-il allume ? (StellarTarot.Check)
     [[nodiscard]] bool Checking() const { return _check; }
+    [[nodiscard]] uint32 UnlockLevel() const { return _unlockLevel; }
+    [[nodiscard]] bool TutorialEnabled() const { return _tutorial; }
 
     [[nodiscard]] std::map<uint32, StellarTarotCard> const& Cards() const { return _cards; }
     [[nodiscard]] std::map<uint32, StellarTarotBoard> const& Boards() const { return _boards; }
@@ -294,6 +296,8 @@ public:
 private:
     bool _enabled = true;
     bool _check = false;
+    uint32 _unlockLevel = 5;
+    bool _tutorial = true;
     std::map<uint32, StellarTarotCard> _cards;
     std::map<uint32, StellarTarotBoard> _boards;
     std::map<uint32, StellarTarotTag> _tags;

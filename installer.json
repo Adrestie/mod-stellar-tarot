@@ -54,6 +54,8 @@
         { "table": "character_spell", "where": "spell IN ({ids:Spell.dbc})", "kept_on_update": true },
         { "table": "character_spell_cooldown", "where": "spell IN ({ids:Spell.dbc})", "kept_on_update": true },
         { "table": "character_aura", "where": "spell IN ({ids:Spell.dbc})" },
+        { "table": "character_queststatus", "where": "quest BETWEEN 87001 AND 87005", "kept_on_update": true },
+        { "table": "character_queststatus_rewarded", "where": "quest BETWEEN 87001 AND 87005", "kept_on_update": true },
         { "table": "character_action", "where": "type = 0 AND action IN ({ids:Spell.dbc})", "kept_on_update": true },
         { "table": "updates", "where": "name IN ({sql_files:characters})" }
       ]
@@ -80,6 +82,9 @@
         { "table": "creature_template_model", "where": "CreatureID BETWEEN 87000 AND 88999" },
         { "table": "creature_template", "where": "entry BETWEEN 87000 AND 88999" },
         { "table": "command", "where": "name = 'tarot' OR name LIKE 'tarot %'" },
+        { "table": "quest_template", "where": "ID BETWEEN 87001 AND 87005" },
+        { "table": "quest_template_addon", "where": "ID BETWEEN 87001 AND 87005" },
+        { "table": "quest_template_locale", "where": "ID BETWEEN 87001 AND 87005" },
         { "table": "updates", "where": "name IN ({sql_files:world})" }
       ]
     }

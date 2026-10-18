@@ -106,6 +106,10 @@ void StellarTarotMgr::Load()
     // sur les lignes a evenement que le joueur porte et ecrit au journal, toutes
     // les trente secondes, si chaque ligne tient ce qu'elle promet.
     _check = sConfigMgr->GetOption<bool>("StellarTarot.Check", false);
+    // LE TAROT S'OUVRE A UN NIVEAU (demande du 2026-10-18 : « se debloque au niveau 5 (reglable dans le
+    // .conf) ») ; en deca, ni fenetre, ni etude, ni effet. Le tutoriel le presente a ce niveau-la.
+    _unlockLevel = sConfigMgr->GetOption<uint32>("StellarTarot.UnlockLevel", 5);
+    _tutorial = sConfigMgr->GetOption<bool>("StellarTarot.Tutorial.Enabled", true);
     if (!_enabled)
     {
         LOG_INFO("module", "StellarTarot: disabled by configuration (StellarTarot.Enabled = 0).");

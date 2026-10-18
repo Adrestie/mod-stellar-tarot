@@ -30,6 +30,7 @@
 #include "StellarTarotMgr.h"
 #include "StellarTarotScript.h"
 #include "StellarTarotStrings.h"
+#include "StellarTarotTutorial.h"
 #include "Spell.h"
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
@@ -176,6 +177,9 @@ namespace
             }
             return out;
         }
+        // EN DECA DU NIVEAU QUI OUVRE LE TAROT (StellarTarot.UnlockLevel), le plateau ne donne rien.
+        if (!StellarTarotTutorial::Unlocked(player))
+            return out;
         StellarTarotLayout const layout = StellarTarotLayouts::Load(player);
         for (StellarTarotActivation const& a : StellarTarotLayouts::Activations(layout))
         {

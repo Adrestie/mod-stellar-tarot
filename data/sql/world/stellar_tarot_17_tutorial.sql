@@ -1,0 +1,161 @@
+-- mod-stellar-tarot — the tutorial: five quests, from the unlock level on.
+--
+-- The tarot opens at StellarTarot.UnlockLevel (5 by default). The module puts these quests in the quest
+-- log one after the other and hands them in itself as soon as the player has done what each one asks
+-- (src/core/StellarTarotTutorial.cpp): no quest giver, no turn-in NPC. SpecialFlags 2 (event) keeps a
+-- quest open until the module says the gesture was made.
+--
+--   87001  open the tarot window                       -> Novice's Board (87501) and The Seed (87058)
+--   87002  study the board and The Seed                -> The Purse (87007)
+--   87003  equip the board
+--   87004  lay a card on the board                     -> The Blanket (87038)
+--   87005  make two edges meet (an effect wakes)      -> 1 gold
+--
+-- Hand-written. Regenerable: the block deletes its own rows before writing them again.
+
+DELETE FROM `quest_template` WHERE `ID` BETWEEN 87001 AND 87005;
+INSERT INTO `quest_template` (`ID`, `QuestType`, `QuestLevel`, `MinLevel`, `QuestSortID`, `QuestInfoID`,
+    `RewardXPDifficulty`, `RewardMoney`, `Flags`,
+    `RewardItem1`, `RewardAmount1`, `RewardItem2`, `RewardAmount2`,
+    `LogTitle`, `LogDescription`, `QuestDescription`, `AreaDescription`, `QuestCompletionLog`, `VerifiedBuild`) VALUES
+(87001, 2, -1, 1, 0, 0, 1, 0, 0, 87501, 1, 87058, 1,
+ 'The Stellar Tarot',
+ 'Open the tarot window: type /tarot, or open the Stellar Tarot tab of the Progression window (the minimap button without it).',
+ 'Cards fallen from the stars wander the world. Laid on a board, they lend you their powers -- a little strength, a little luck, a little more of what you already are.$B$BOpen the tarot window and see for yourself what they are.',
+ '', 'The window is open.', 0),
+(87002, 2, -1, 1, 0, 0, 1, 0, 0, 87007, 1, 0, 0,
+ 'The Binder',
+ 'Use (right-click) the Novice''s Board and the card The Seed in your bags.',
+ 'A card or a board you carry does nothing in your bags. Use it: it joins your binder, the binder of every character of your account, and the item is spent.$B$BStudy the Novice''s Board and The Seed.',
+ '', 'Both are in your binder.', 0),
+(87003, 2, -1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+ 'The Board',
+ 'In the tarot window, pick the Novice''s Board in the list of your boards to equip it.',
+ 'Cards are laid on a board. A small one to begin with: two cells by two.$B$BOpen the tarot window and equip the Novice''s Board.',
+ '', 'The board is equipped.', 0),
+(87004, 2, -1, 1, 0, 0, 1, 0, 0, 87038, 1, 0, 0,
+ 'The First Card',
+ 'Drag The Seed from your deck, on the left of the tarot window, onto a cell of the board.',
+ 'Your deck is on the left of the window: every card you studied. Drag one onto the board.$B$BLay The Seed on a cell of the Novice''s Board.',
+ '', 'The Seed lies on the board.', 0),
+(87005, 2, -1, 1, 0, 0, 1, 10000, 0, 0, 0, 0, 0,
+ 'Edges That Meet',
+ 'Study The Purse and The Blanket, then lay a second card against The Seed so that the numbers of the edges that touch are equal. Hint: The Seed on the left, The Purse on its right (1 against 1).',
+ 'Each of a card''s four edges carries a number, and so do the rims of the board. Where two facing numbers are equal, the card wakes -- and the more edges match, the higher the level it reaches. The rims are a start; the cards themselves are the art.$B$BStudy The Purse and The Blanket, and wake a card on your board.',
+ '', 'A card is awake.', 0);
+
+DELETE FROM `quest_template_addon` WHERE `ID` BETWEEN 87001 AND 87005;
+INSERT INTO `quest_template_addon` (`ID`, `PrevQuestID`, `SpecialFlags`) VALUES
+(87001, 0, 2),
+(87002, 87001, 2),
+(87003, 87002, 2),
+(87004, 87003, 2),
+(87005, 87004, 2);
+
+DELETE FROM `quest_template_locale` WHERE `ID` BETWEEN 87001 AND 87005;
+INSERT INTO `quest_template_locale` (`ID`, `locale`, `Title`, `Details`, `Objectives`, `EndText`, `CompletedText`, `VerifiedBuild`) VALUES
+-- frFR
+(87001, 'frFR', 'Le tarot stellaire',
+ 'Des cartes tombées des étoiles parcourent le monde. Posées sur un plateau, elles vous prêtent leurs pouvoirs -- un peu de force, un peu de chance, un peu plus de ce que vous êtes déjà.$B$BOuvrez la fenêtre du tarot et voyez par vous-même ce qu''elles sont.',
+ 'Ouvrez la fenêtre du tarot : tapez /tarot, ou ouvrez l''onglet Stellar Tarot de la fenêtre Progression (le bouton de la minicarte sans elle).',
+ '', 'La fenêtre est ouverte.', 0),
+(87002, 'frFR', 'Le classeur',
+ 'Une carte ou un plateau ne fait rien dans vos sacs. Utilisez-le : il rejoint votre classeur, celui de tous les personnages de votre compte, et l''objet est consommé.$B$BÉtudiez le Plateau du novice et The Seed.',
+ 'Utilisez (clic droit) le Plateau du novice et la carte The Seed dans vos sacs.',
+ '', 'Les deux sont dans votre classeur.', 0),
+(87003, 'frFR', 'Le plateau',
+ 'Les cartes se posent sur un plateau. Un petit pour commencer : deux cases sur deux.$B$BOuvrez la fenêtre du tarot et équipez le Plateau du novice.',
+ 'Dans la fenêtre du tarot, choisissez le Plateau du novice dans la liste de vos plateaux pour l''équiper.',
+ '', 'Le plateau est équipé.', 0),
+(87004, 'frFR', 'La première carte',
+ 'Votre deck est à gauche de la fenêtre : toutes les cartes que vous avez étudiées. Faites-en glisser une sur le plateau.$B$BPosez The Seed sur une case du Plateau du novice.',
+ 'Faites glisser The Seed depuis votre deck, à gauche de la fenêtre du tarot, jusqu''à une case du plateau.',
+ '', 'The Seed est sur le plateau.', 0),
+(87005, 'frFR', 'Les bords qui se touchent',
+ 'Chacun des quatre bords d''une carte porte un chiffre, et les rebords du plateau aussi. Là où deux chiffres face à face sont égaux, la carte s''éveille -- et plus il y a de bords accordés, plus son niveau monte. Les rebords sont un début ; l''art est d''accorder les cartes entre elles.$B$BÉtudiez The Purse et The Blanket, et éveillez une carte de votre plateau.',
+ 'Étudiez The Purse et The Blanket, puis posez une deuxième carte contre The Seed de façon que les chiffres des bords qui se touchent soient égaux. Astuce : The Seed à gauche, The Purse à sa droite (1 contre 1).',
+ '', 'Une carte est éveillée.', 0),
+-- deDE
+(87001, 'deDE', 'Das Sternentarot',
+ 'Von den Sternen gefallene Karten wandern durch die Welt. Auf ein Spielbrett gelegt, leihen sie Euch ihre Kräfte -- ein wenig Stärke, ein wenig Glück, ein wenig mehr von dem, was Ihr schon seid.$B$BÖffnet das Tarotfenster und seht selbst, was sie sind.',
+ 'Öffnet das Tarotfenster: Gebt /tarot ein oder öffnet den Reiter Stellar Tarot im Fenster Fortschritt (ohne dieses: den Knopf an der Minikarte).',
+ '', 'Das Fenster ist geöffnet.', 0),
+(87002, 'deDE', 'Das Sammelalbum',
+ 'Eine Karte oder ein Spielbrett bewirkt in Euren Taschen nichts. Benutzt es: Es kommt in Euer Sammelalbum, das aller Charaktere Eures Accounts, und der Gegenstand wird verbraucht.$B$BStudiert das Spielbrett des Novizen und The Seed.',
+ 'Benutzt (Rechtsklick) das Spielbrett des Novizen und die Karte The Seed in Euren Taschen.',
+ '', 'Beide sind in Eurem Sammelalbum.', 0),
+(87003, 'deDE', 'Das Spielbrett',
+ 'Karten werden auf ein Spielbrett gelegt. Für den Anfang ein kleines: zwei mal zwei Felder.$B$BÖffnet das Tarotfenster und rüstet das Spielbrett des Novizen aus.',
+ 'Wählt im Tarotfenster das Spielbrett des Novizen in der Liste Eurer Spielbretter, um es auszurüsten.',
+ '', 'Das Spielbrett ist ausgerüstet.', 0),
+(87004, 'deDE', 'Die erste Karte',
+ 'Euer Deck ist links im Fenster: alle Karten, die Ihr studiert habt. Zieht eine auf das Spielbrett.$B$BLegt The Seed auf ein Feld des Spielbretts des Novizen.',
+ 'Zieht The Seed aus Eurem Deck links im Tarotfenster auf ein Feld des Spielbretts.',
+ '', 'The Seed liegt auf dem Spielbrett.', 0),
+(87005, 'deDE', 'Ränder, die sich berühren',
+ 'Jeder der vier Ränder einer Karte trägt eine Zahl, und die Ränder des Spielbretts ebenso. Wo zwei gegenüberliegende Zahlen gleich sind, erwacht die Karte -- und je mehr Ränder passen, desto höher ihre Stufe. Die Brettränder sind ein Anfang; die Kunst ist, die Karten untereinander abzustimmen.$B$BStudiert The Purse und The Blanket und weckt eine Karte auf Eurem Spielbrett.',
+ 'Studiert The Purse und The Blanket und legt dann eine Karte so an eine andere, dass die Zahlen der sich berührenden Ränder gleich sind: Die Karte erwacht und ihr Effekt wirkt. Tipp: Legt The Seed links neben The Purse.',
+ '', 'Eine Karte ist erwacht.', 0),
+-- esES
+(87001, 'esES', 'El tarot estelar',
+ 'Cartas caídas de las estrellas recorren el mundo. Colocadas en un tablero, te prestan sus poderes: un poco de fuerza, un poco de suerte, un poco más de lo que ya eres.$B$BAbre la ventana del tarot y descubre por ti mismo lo que son.',
+ 'Abre la ventana del tarot: escribe /tarot o abre la pestaña Stellar Tarot de la ventana Progresión (sin ella, el botón del minimapa).',
+ '', 'La ventana está abierta.', 0),
+(87002, 'esES', 'El álbum',
+ 'Una carta o un tablero no hace nada en tus bolsas. Úsalo: se une a tu álbum, el de todos los personajes de tu cuenta, y el objeto se consume.$B$BEstudia el Tablero del novicio y The Seed.',
+ 'Usa (clic derecho) el Tablero del novicio y la carta The Seed de tus bolsas.',
+ '', 'Ambos están en tu álbum.', 0),
+(87003, 'esES', 'El tablero',
+ 'Las cartas se colocan en un tablero. Uno pequeño para empezar: dos casillas por dos.$B$BAbre la ventana del tarot y equipa el Tablero del novicio.',
+ 'En la ventana del tarot, elige el Tablero del novicio en la lista de tus tableros para equiparlo.',
+ '', 'El tablero está equipado.', 0),
+(87004, 'esES', 'La primera carta',
+ 'Tu mazo está a la izquierda de la ventana: todas las cartas que has estudiado. Arrastra una al tablero.$B$BColoca The Seed en una casilla del Tablero del novicio.',
+ 'Arrastra The Seed desde tu mazo, a la izquierda de la ventana del tarot, hasta una casilla del tablero.',
+ '', 'The Seed está en el tablero.', 0),
+(87005, 'esES', 'Bordes que se tocan',
+ 'Cada uno de los cuatro bordes de una carta lleva un número, y también los rebordes del tablero. Donde dos números enfrentados son iguales, la carta despierta, y cuantos más bordes coinciden, más alto es su nivel. Los rebordes son un comienzo; el arte es combinar las cartas entre sí.$B$BEstudia The Purse y The Blanket y despierta una carta de tu tablero.',
+ 'Estudia The Purse y The Blanket y luego coloca una carta junto a otra de modo que los números de los bordes que se tocan sean iguales: la carta despierta y su efecto se aplica. Consejo: coloca The Seed a la izquierda de The Purse.',
+ '', 'Una carta ha despertado.', 0),
+-- esMX
+(87001, 'esMX', 'El tarot estelar',
+ 'Cartas caídas de las estrellas recorren el mundo. Colocadas en un tablero, te prestan sus poderes: un poco de fuerza, un poco de suerte, un poco más de lo que ya eres.$B$BAbre la ventana del tarot y descubre por ti mismo lo que son.',
+ 'Abre la ventana del tarot: escribe /tarot o abre la pestaña Stellar Tarot de la ventana Progresión (sin ella, el botón del minimapa).',
+ '', 'La ventana está abierta.', 0),
+(87002, 'esMX', 'El álbum',
+ 'Una carta o un tablero no hace nada en tus bolsas. Úsalo: se une a tu álbum, el de todos los personajes de tu cuenta, y el objeto se consume.$B$BEstudia el Tablero del novicio y The Seed.',
+ 'Usa (clic derecho) el Tablero del novicio y la carta The Seed de tus bolsas.',
+ '', 'Ambos están en tu álbum.', 0),
+(87003, 'esMX', 'El tablero',
+ 'Las cartas se colocan en un tablero. Uno pequeño para empezar: dos casillas por dos.$B$BAbre la ventana del tarot y equipa el Tablero del novicio.',
+ 'En la ventana del tarot, elige el Tablero del novicio en la lista de tus tableros para equiparlo.',
+ '', 'El tablero está equipado.', 0),
+(87004, 'esMX', 'La primera carta',
+ 'Tu mazo está a la izquierda de la ventana: todas las cartas que has estudiado. Arrastra una al tablero.$B$BColoca The Seed en una casilla del Tablero del novicio.',
+ 'Arrastra The Seed desde tu mazo, a la izquierda de la ventana del tarot, hasta una casilla del tablero.',
+ '', 'The Seed está en el tablero.', 0),
+(87005, 'esMX', 'Bordes que se tocan',
+ 'Cada uno de los cuatro bordes de una carta lleva un número, y también los rebordes del tablero. Donde dos números enfrentados son iguales, la carta despierta, y cuantos más bordes coinciden, más alto es su nivel. Los rebordes son un comienzo; el arte es combinar las cartas entre sí.$B$BEstudia The Purse y The Blanket y despierta una carta de tu tablero.',
+ 'Estudia The Purse y The Blanket y luego coloca una carta junto a otra de modo que los números de los bordes que se tocan sean iguales: la carta despierta y su efecto se aplica. Consejo: coloca The Seed a la izquierda de The Purse.',
+ '', 'Una carta ha despertado.', 0),
+-- ruRU
+(87001, 'ruRU', 'Звёздное Таро',
+ 'По миру бродят карты, упавшие со звёзд. Разложенные на поле, они одалживают вам свою силу -- немного мощи, немного удачи, немного больше того, кем вы уже являетесь.$B$BОткройте окно Таро и узнайте сами, что они такое.',
+ 'Откройте окно Таро: введите /tarot или откройте вкладку Stellar Tarot в окне «Развитие» (без него -- кнопку у миникарты).',
+ '', 'Окно открыто.', 0),
+(87002, 'ruRU', 'Альбом',
+ 'Карта или поле в сумках ничего не дают. Используйте их: они попадают в ваш альбом, общий для всех персонажей учётной записи, а предмет расходуется.$B$BИзучите Поле новичка и карту The Seed.',
+ 'Используйте (правый щелчок) Поле новичка и карту The Seed в сумках.',
+ '', 'Оба в вашем альбоме.', 0),
+(87003, 'ruRU', 'Поле',
+ 'Карты раскладывают на поле. Для начала маленькое: две клетки на две.$B$BОткройте окно Таро и выберите Поле новичка.',
+ 'В окне Таро выберите Поле новичка в списке ваших полей, чтобы установить его.',
+ '', 'Поле установлено.', 0),
+(87004, 'ruRU', 'Первая карта',
+ 'Ваша колода слева в окне: все изученные карты. Перетащите одну на поле.$B$BПоложите The Seed на клетку Поля новичка.',
+ 'Перетащите The Seed из колоды слева в окне Таро на клетку поля.',
+ '', 'The Seed лежит на поле.', 0),
+(87005, 'ruRU', 'Соприкасающиеся края',
+ 'На каждом из четырёх краёв карты стоит число, как и на бортах поля. Где два числа напротив равны, карта пробуждается -- и чем больше краёв совпадает, тем выше её уровень. Борта -- лишь начало; искусство в том, чтобы согласовать карты между собой.$B$BИзучите The Purse и The Blanket и пробудите карту на своём поле.',
+ 'Изучите The Purse и The Blanket, затем положите карту рядом с другой так, чтобы числа соприкасающихся краёв были равны: карта пробудится и её эффект начнёт действовать. Подсказка: положите The Seed слева от The Purse.',
+ '', 'Карта пробуждена.', 0);

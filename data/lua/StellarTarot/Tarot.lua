@@ -265,7 +265,15 @@ function Handlers.Hello(player)
     AIO.Handle(player, "StellarTarot", "Prime", Catalogue(Locale(player)), Binder(player), Layout(player))
 end
 
+-- LE NIVEAU QUI OUVRE LE TAROT (StellarTarot.UnlockLevel, 5 par defaut). La commande `.tarot open` dit
+-- le refus en deca, et annonce l'ouverture au tutoriel au-dela.
+local function UnlockLevel()
+    return tonumber(GetConfigValue("StellarTarot.UnlockLevel")) or 5
+end
+
 function Handlers.Open(player)
+    player:RunCommand("tarot open")
+    if player:GetLevel() < UnlockLevel() then return end
     AIO.Handle(player, "StellarTarot", "Show", Catalogue(Locale(player)), Binder(player), Layout(player))
 end
 

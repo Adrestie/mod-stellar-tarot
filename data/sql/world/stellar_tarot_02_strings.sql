@@ -155,7 +155,9 @@ INSERT INTO `module_string` (`module`, `id`, `string`) VALUES
 ('mod-stellar-tarot', 75, 'Test: ''{}'' is not a state word, or ''{}'' is not on, off or free.'),
 ('mod-stellar-tarot', 76, 'Test: {} {} ({}): {}.'),
 ('mod-stellar-tarot', 77, 'Test: {}: health {}/{}, mana {}/{}, money {}, combat {}, auras {}.'),
-('mod-stellar-tarot', 78, 'Cell {},{} is a hole of this board: no card goes there.');
+('mod-stellar-tarot', 78, 'Cell {},{} is a hole of this board: no card goes there.'),
+('mod-stellar-tarot', 79, 'The stellar tarot opens at level {}.'),
+('mod-stellar-tarot', 80, 'Stellar tarot: a new quest is in your quest log.');
 
 DELETE FROM `module_string_locale` WHERE `module` = 'mod-stellar-tarot' AND `id` BETWEEN 61 AND 80;
 INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
@@ -176,7 +178,9 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot', 75, 'frFR', 'Test : « {} » n''est pas un mot d''état, ou « {} » n''est ni on, ni off, ni free.'),
 ('mod-stellar-tarot', 76, 'frFR', 'Test : {} {} ({}) : {}.'),
 ('mod-stellar-tarot', 77, 'frFR', 'Test : {} : vie {}/{}, mana {}/{}, argent {}, combat {}, auras {}.'),
-('mod-stellar-tarot', 78, 'frFR', 'La case {},{} est un trou de ce plateau : aucune carte n''y va.');
+('mod-stellar-tarot', 78, 'frFR', 'La case {},{} est un trou de ce plateau : aucune carte n''y va.'),
+('mod-stellar-tarot', 79, 'frFR', 'Le tarot stellaire s''ouvre au niveau {}.'),
+('mod-stellar-tarot', 80, 'frFR', 'Tarot stellaire : une nouvelle quête est dans votre journal de quêtes.');
 
 -- THE OTHER LANGUAGES OF THE CLIENT: German, Spanish (esES and esMX) and Russian,
 -- every string above. Translated from the English and the French (atelier : traductions/chaines_trad.json).
@@ -493,4 +497,12 @@ INSERT INTO `module_string_locale` (`module`, `id`, `locale`, `string`) VALUES
 ('mod-stellar-tarot',   78, 'deDE', 'Das Feld {},{} ist ein Loch dieses Spielbretts: Dort kommt keine Karte hin.'),
 ('mod-stellar-tarot',   78, 'esES', 'La casilla {},{} es un hueco de este tablero: ninguna carta va allí.'),
 ('mod-stellar-tarot',   78, 'esMX', 'La casilla {},{} es un hueco de este tablero: ninguna carta va allí.'),
-('mod-stellar-tarot',   78, 'ruRU', 'Клетка {},{} — это дыра на этом поле: туда нельзя положить карту.');
+('mod-stellar-tarot',   78, 'ruRU', 'Клетка {},{} — это дыра на этом поле: туда нельзя положить карту.'),
+('mod-stellar-tarot',   79, 'deDE', 'Das Sternentarot öffnet sich ab Stufe {}.'),
+('mod-stellar-tarot',   79, 'esES', 'El tarot estelar se abre en el nivel {}.'),
+('mod-stellar-tarot',   79, 'esMX', 'El tarot estelar se abre en el nivel {}.'),
+('mod-stellar-tarot',   79, 'ruRU', 'Звёздное Таро открывается с {}-го уровня.'),
+('mod-stellar-tarot',   80, 'deDE', 'Sternentarot: Eine neue Quest steht in Eurem Questlog.'),
+('mod-stellar-tarot',   80, 'esES', 'Tarot estelar: hay una nueva misión en tu registro de misiones.'),
+('mod-stellar-tarot',   80, 'esMX', 'Tarot estelar: hay una nueva misión en tu registro de misiones.'),
+('mod-stellar-tarot',   80, 'ruRU', 'Звёздное Таро: в вашем журнале новое задание.');

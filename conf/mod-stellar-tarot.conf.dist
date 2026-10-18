@@ -41,6 +41,25 @@ StellarTarot.Enabled = 1
 
 StellarTarot.Check = 0
 
+#
+#    StellarTarot.UnlockLevel
+#        Description: The character level from which the stellar tarot opens. Below it the window,
+#                     the study of cards and boards and every card effect are refused.
+#        Default:     5
+
+StellarTarot.UnlockLevel = 5
+
+#
+#    StellarTarot.Tutorial.Enabled
+#        Description: From the unlock level, five tutorial quests (87001-87005) enter the quest log
+#                     one after the other and are handed in by the module when the player does what
+#                     they ask: open the window, study, equip a board, lay a card, wake a card. They
+#                     give the Novice's Board, The Seed, The Purse and The Blanket.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+
+StellarTarot.Tutorial.Enabled = 1
+
 ###############################################################################
 #
 #    WHERE CARDS AND BOARDS DROP
