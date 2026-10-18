@@ -9,6 +9,7 @@
 
 #include "StellarTarotTutorial.h"
 #include "Chat.h"
+#include "DatabaseEnv.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "QuestDef.h"
@@ -17,6 +18,7 @@
 #include "StellarTarotMgr.h"
 #include "StellarTarotStrings.h"
 #include "WorldSession.h"
+#include <map>
 #include <set>
 
 namespace
@@ -92,6 +94,71 @@ namespace
         return 0;
     }
 
+    // LE TAROT DU COMPTE (demande du 2026-10-18 : « si le joueur a debloque Stellar Tarot sur l'un de ses
+    // personnages, il est debloque sur les autres personnages et les prochains crees des le niveau 1. La
+    // quete ne doit pas etre redeclenchee ») : ouvert pour tout le compte des qu'un personnage a atteint
+    // le niveau, et un seul tutoriel par compte -- celui du personnage qui l'a commence.
+    struct Compte
+    {
+        bool unlocked = false;
+        uint32 owner = 0;           // le personnage qui joue le tutoriel ; 0 : personne encore
+        bool done = false;
+    };
+
+    std::map<uint32, Compte>& Comptes()
+    {
+        static std::map<uint32, Compte> comptes;
+        return comptes;
+    }
+
+    void Ecrire(uint32 account, Compte const& c)
+    {
+        CharacterDatabase.Execute("REPLACE INTO mod_stellar_tarot_account (account_id, unlocked, tutorial_guid, "
+                                  "tutorial_done) VALUES ({}, {}, {}, {})",
+                                  account, c.unlocked ? 1 : 0, c.owner, c.done ? 1 : 0);
+    }
+
+    // Lu a la premiere connexion d'un personnage du compte. Un compte sans ligne -- d'avant cette regle --
+    // se deduit de ses personnages : l'un d'eux au niveau, un tutoriel commence ou rendu.
+    Compte& Lire(uint32 account)
+    {
+        auto it = Comptes().find(account);
+        if (it != Comptes().end())
+            return it->second;
+        Compte c;
+        if (QueryResult r = CharacterDatabase.Query("SELECT unlocked, tutorial_guid, tutorial_done FROM "
+                                                    "mod_stellar_tarot_account WHERE account_id = {}", account))
+        {
+            Field* f = r->Fetch();
+            c.unlocked = f[0].Get<uint8>() != 0;
+            c.owner = f[1].Get<uint32>();
+            c.done = f[2].Get<uint8>() != 0;
+        }
+        else
+        {
+            if (QueryResult r = CharacterDatabase.Query("SELECT MAX(level) FROM characters WHERE account = {}", account))
+                c.unlocked = r->Fetch()[0].Get<uint32>() >= sStellarTarotMgr->UnlockLevel();
+            if (QueryResult r = CharacterDatabase.Query("SELECT 1 FROM character_queststatus_rewarded q JOIN characters c "
+                                                        "ON c.guid = q.guid WHERE c.account = {} AND q.quest = {}",
+                                                        account, uint32(STEP_MATCH)))
+                c.done = true;
+            if (QueryResult r = CharacterDatabase.Query("SELECT q.guid FROM character_queststatus q JOIN characters c "
+                                                        "ON c.guid = q.guid WHERE c.account = {} AND q.quest BETWEEN {} AND {} "
+                                                        "LIMIT 1", account, uint32(STEP_OPEN), uint32(STEP_MATCH)))
+                c.owner = r->Fetch()[0].Get<uint32>();
+            Ecrire(account, c);
+        }
+        // le personnage qui jouait le tutoriel a ete supprime : le suivant le reprend
+        if (c.owner && !c.done && !CharacterDatabase.Query("SELECT 1 FROM characters WHERE guid = {}", c.owner))
+            c.owner = 0;
+        return Comptes()[account] = c;
+    }
+
+    uint32 Compte_(Player const* player)
+    {
+        return player && player->GetSession() ? player->GetSession()->GetAccountId() : 0;
+    }
+
     bool Ready(Player const* player)
     {
         return player && player->GetSession() && sStellarTarotMgr->Enabled() && sStellarTarotMgr->TutorialEnabled()
@@ -101,13 +168,36 @@ namespace
 
 bool StellarTarotTutorial::Unlocked(Player const* player)
 {
-    return player && player->GetLevel() >= sStellarTarotMgr->UnlockLevel();
+    if (!player)
+        return false;
+    if (player->GetLevel() >= sStellarTarotMgr->UnlockLevel())
+        return true;
+    uint32 const account = Compte_(player);
+    return account && Lire(account).unlocked;
 }
 
 void StellarTarotTutorial::Offer(Player* player)
 {
+    if (!player || !player->GetSession())
+        return;
+    uint32 const account = Compte_(player);
+    Compte& compte = Lire(account);
+    // un personnage au niveau ouvre le tarot a tout le compte
+    if (!compte.unlocked && player->GetLevel() >= sStellarTarotMgr->UnlockLevel())
+    {
+        compte.unlocked = true;
+        Ecrire(account, compte);
+    }
     if (!Ready(player))
         return;
+    // UN SEUL TUTORIEL PAR COMPTE : fini, ou joue par un autre personnage, il ne revient pas
+    if (compte.done || (compte.owner && compte.owner != player->GetGUID().GetCounter()))
+        return;
+    if (!compte.owner)
+    {
+        compte.owner = player->GetGUID().GetCounter();
+        Ecrire(account, compte);
+    }
     uint32 const step = Current(player);
     Quest const* quest = step ? sObjectMgr->GetQuestTemplate(step) : nullptr;
     if (!quest)
@@ -134,6 +224,9 @@ void StellarTarotTutorial::Advance(Player* player)
 {
     if (!Ready(player))
         return;
+    Compte& compte = Lire(Compte_(player));
+    if (compte.done || compte.owner != player->GetGUID().GetCounter())
+        return;
     // Les etapes faites d'avance s'enchainent : une seule passe les rend toutes.
     for (uint8 garde = 0; garde < 5; ++garde)
     {
@@ -158,6 +251,12 @@ void StellarTarotTutorial::Advance(Player* player)
         if (!player->CanRewardQuest(quest, 0, true))
             return;                         // les sacs sont pleins : la quete attend, terminee
         player->RewardQuest(quest, 0, player);
+        if (step == STEP_MATCH)
+        {
+            compte.done = true;
+            Ecrire(Compte_(player), compte);
+            return;
+        }
         // l'etape suivante entre au journal ; elle est peut-etre deja faite
         uint32 const next = Current(player);
         Quest const* suite = next ? sObjectMgr->GetQuestTemplate(next) : nullptr;

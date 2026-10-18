@@ -271,9 +271,18 @@ local function UnlockLevel()
     return tonumber(GetConfigValue("StellarTarot.UnlockLevel")) or 5
 end
 
+-- Ouvert pour le personnage : son niveau, ou le compte (un autre personnage l'a ouvert -- la ligne que le
+-- module ecrit dans mod_stellar_tarot_account a la connexion).
+local function Unlocked(player)
+    if player:GetLevel() >= UnlockLevel() then return true end
+    local q = CharDBQuery(fmt("SELECT unlocked FROM mod_stellar_tarot_account WHERE account_id = %d",
+                              player:GetAccountId()))
+    return q ~= nil and q:GetUInt32(0) == 1
+end
+
 function Handlers.Open(player)
     player:RunCommand("tarot open")
-    if player:GetLevel() < UnlockLevel() then return end
+    if not Unlocked(player) then return end
     AIO.Handle(player, "StellarTarot", "Show", Catalogue(Locale(player)), Binder(player), Layout(player))
 end
 

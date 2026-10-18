@@ -46,10 +46,10 @@
     "characters": {
       "tables": ["mod_stellar_tarot_account_card", "mod_stellar_tarot_account_board",
                  "mod_stellar_tarot_character_board", "mod_stellar_tarot_character_cell",
-                 "mod_stellar_tarot_preset", "mod_stellar_tarot_preset_cell"],
+                 "mod_stellar_tarot_preset", "mod_stellar_tarot_preset_cell", "mod_stellar_tarot_account"],
       "kept_on_update": ["mod_stellar_tarot_account_card", "mod_stellar_tarot_account_board",
                          "mod_stellar_tarot_character_board", "mod_stellar_tarot_character_cell",
-                         "mod_stellar_tarot_preset", "mod_stellar_tarot_preset_cell"],
+                         "mod_stellar_tarot_preset", "mod_stellar_tarot_preset_cell", "mod_stellar_tarot_account"],
       "rows": [
         { "table": "character_spell", "where": "spell IN ({ids:Spell.dbc})", "kept_on_update": true },
         { "table": "character_spell_cooldown", "where": "spell IN ({ids:Spell.dbc})", "kept_on_update": true },

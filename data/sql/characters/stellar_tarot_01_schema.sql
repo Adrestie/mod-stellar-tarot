@@ -58,3 +58,15 @@ CREATE TABLE IF NOT EXISTS `mod_stellar_tarot_preset_cell` (
   PRIMARY KEY (`account_id`, `preset_id`, `row_idx`, `col_idx`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='StellarTarot: the cards of a saved layout';
+
+-- THE ACCOUNT'S TAROT (2026-10-18): unlocked once a character of the account reached
+-- StellarTarot.UnlockLevel -- every character of the account, new ones included, then has it from level
+-- 1 -- and the tutorial, played once per account: the character that plays it, and whether it is done.
+CREATE TABLE IF NOT EXISTS `mod_stellar_tarot_account` (
+  `account_id` INT UNSIGNED NOT NULL,
+  `unlocked` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `tutorial_guid` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0 = no character has started it',
+  `tutorial_done` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='StellarTarot: the tarot unlocked for the account, and its tutorial';
