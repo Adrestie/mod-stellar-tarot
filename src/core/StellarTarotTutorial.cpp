@@ -159,6 +159,16 @@ namespace
         return player && player->GetSession() ? player->GetSession()->GetAccountId() : 0;
     }
 
+    // LES QUETES ABANDONNEES (demande du 2026-10-18 : « les quetes ne doivent pas pouvoir etre
+    // abandonnees, sinon automatiquement redonnees immediatement ») : le client ne sait pas refuser un
+    // abandon ; la quete revient au journal a la mise a jour suivante -- jamais dans le crochet, ou le
+    // coeur efface encore la case qu'elle occupait.
+    std::set<ObjectGuid>& Abandons()
+    {
+        static std::set<ObjectGuid> abandons;
+        return abandons;
+    }
+
     // le joueur deja prevenu que ses sacs etaient pleins, quete par quete
     std::set<std::pair<ObjectGuid, uint32>>& Prevenus()
     {
@@ -291,7 +301,16 @@ void StellarTarotTutorial::Advance(Player* player)
 void StellarTarotTutorial::OnLogout(Player* player)
 {
     if (player)
+    {
         Opened().erase(player->GetGUID());
+        Abandons().erase(player->GetGUID());
+    }
+}
+
+void StellarTarotTutorial::OnAbandon(Player* player, uint32 questId)
+{
+    if (player && questId >= STEP_OPEN && questId <= STEP_MATCH)
+        Abandons().insert(player->GetGUID());
 }
 
 void StellarTarotTutorial::OnSecond(Player* player)
@@ -299,7 +318,21 @@ void StellarTarotTutorial::OnSecond(Player* player)
     // seule une quete terminee qui attend sa recompense se regarde ici -- rien d'autre ne lit la base
     if (!player || !player->GetSession())
         return;
+    if (Abandons().erase(player->GetGUID()))
+    {
+        ChatHandler(player->GetSession()).PSendModuleSysMessage(STELLAR_TAROT_MODULE, STELLAR_TAROT_STR_TUTORIAL_KEPT);
+        Offer(player);
+        return;
+    }
     uint32 const step = Current(player);
     if (step && player->GetQuestStatus(step) == QUEST_STATUS_COMPLETE)
         Advance(player);
+    // la quete du tutoriel a quitte le journal sans etre rendue (abandon, commande de MJ) : elle revient,
+    // pour le personnage qui joue le tutoriel et lui seul
+    else if (step && player->GetQuestStatus(step) == QUEST_STATUS_NONE && Ready(player))
+    {
+        Compte const& compte = Lire(Compte_(player));
+        if (!compte.done && compte.owner == player->GetGUID().GetCounter())
+            Offer(player);
+    }
 }

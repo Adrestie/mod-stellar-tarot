@@ -31,6 +31,8 @@
 #ifndef MOD_STELLAR_TAROT_TUTORIAL_H_
 #define MOD_STELLAR_TAROT_TUTORIAL_H_
 
+#include "Define.h"
+
 class Player;
 
 namespace StellarTarotTutorial
@@ -48,6 +50,9 @@ namespace StellarTarotTutorial
     void Advance(Player* player);
 
     void OnLogout(Player* player);
+
+    // Une quete du tutoriel abandonnee : elle revient au journal a la seconde suivante.
+    void OnAbandon(Player* player, uint32 questId);
 
     // Chaque seconde : une recompense en attente de place dans les sacs se donne des que la place est faite.
     void OnSecond(Player* player);

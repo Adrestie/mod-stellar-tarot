@@ -79,6 +79,7 @@ public:
             PLAYERHOOK_ON_LEVEL_CHANGED,
             PLAYERHOOK_ON_CREATURE_KILL,
             PLAYERHOOK_ON_PVP_KILL,
+            PLAYERHOOK_ON_QUEST_ABANDON,
             PLAYERHOOK_ON_CREATURE_KILLED_BY_PET,
             PLAYERHOOK_ON_UPDATE,
             PLAYERHOOK_ON_PLAYER_ENTER_COMBAT,
@@ -127,6 +128,12 @@ public:
     {
         StellarTarotEffects::OnCreatureKill(killer, killed);
     }
+    // Une quete du tutoriel ne s'abandonne pas : elle revient.
+    void OnPlayerQuestAbandon(Player* player, uint32 questId) override
+    {
+        StellarTarotTutorial::OnAbandon(player, questId);
+    }
+
     // UN JOUEUR ENNEMI TUE (essais JcJ du 2026-10-18) : « ennemi tue » vaut aussi pour lui.
     void OnPlayerPVPKill(Player* killer, Player* killed) override
     {
