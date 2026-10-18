@@ -5032,6 +5032,33 @@ else
     MinimapButton()
 end
 
+-- ---------------------------------------------------------------------------
+-- THE CARDS' GAINS IN THE FLOATING COMBAT TEXT (request of 2026-10-18: "The
+-- Star L3: the mana gain must show in the floating text"). The server logs a
+-- card's mana gain as a spell's energize; the game shows such gains only with
+-- its "energy gains" option, off by default. A gain from a card's spell is
+-- shown here instead -- unless that option is on, the game then showing it
+-- itself. Without the floating text (Blizzard_CombatText not loaded), nothing.
+-- ---------------------------------------------------------------------------
+local FIRST_SPELL, LAST_SPELL = 87000, 89999
+local ENERGIZE = { SPELL_ENERGIZE = true, SPELL_PERIODIC_ENERGIZE = true }
+local POWER_NAMES = { [0] = MANA, [1] = RAGE, [3] = ENERGY, [6] = RUNIC_POWER }
+local POWER_COLOURS = { [0] = { 0.1, 0.1, 1 }, [1] = { 1, 0.1, 0.1 }, [3] = { 1, 1, 0.1 }, [6] = { 0, 0.82, 1 } }
+
+local gains = _G["StellarTarotGainText"] or CreateFrame("Frame", "StellarTarotGainText", UIParent)
+gains:UnregisterAllEvents()
+gains:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+gains:SetScript("OnEvent", function(_, _, _, event, _, _, _, destGUID, _, _, spellId, _, _, amount, powerType)
+    if not ENERGIZE[event] or destGUID ~= UnitGUID("player") then return end
+    if not (spellId and spellId >= FIRST_SPELL and spellId <= LAST_SPELL) then return end
+    if not (amount and amount > 0) or not CombatText_AddMessage then return end
+    if GetCVar("fctEnergyGains") == "1" then return end
+    local name = POWER_NAMES[powerType or 0]
+    if not name then return end
+    local c = POWER_COLOURS[powerType or 0]
+    CombatText_AddMessage("+" .. amount .. " " .. name, COMBAT_TEXT_SCROLL_FUNCTION, c[1], c[2], c[3])
+end)
+
 -- The binder is asked for as soon as this file runs, so that the tooltips
 -- know what is already studied before the window is ever opened.
 AIO.Handle("StellarTarot", "Hello")
