@@ -136,8 +136,8 @@ namespace
         }
         else
         {
-            if (QueryResult r = CharacterDatabase.Query("SELECT MAX(level) FROM characters WHERE account = {}", account))
-                c.unlocked = r->Fetch()[0].Get<uint32>() >= sStellarTarotMgr->UnlockLevel();
+            // le deblocage, lui, ne se deduit pas : il arrive quand un personnage du compte se connecte ou
+            // monte au niveau (Offer) -- un compte vide de ses donnees de tarot repart ferme.
             if (QueryResult r = CharacterDatabase.Query("SELECT 1 FROM character_queststatus_rewarded q JOIN characters c "
                                                         "ON c.guid = q.guid WHERE c.account = {} AND q.quest = {}",
                                                         account, uint32(STEP_MATCH)))

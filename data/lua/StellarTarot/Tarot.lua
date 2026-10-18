@@ -261,8 +261,12 @@ end
 -- binder and its layout without the window opening -- what its tooltips need
 -- from the first moment: what is already known, and what the board's aura
 -- grants.
+-- Defini plus bas (le tarot ouvert au personnage) ; Hello le lit quand le client se presente.
+local Ouvert
+
 function Handlers.Hello(player)
-    AIO.Handle(player, "StellarTarot", "Prime", Catalogue(Locale(player)), Binder(player), Layout(player))
+    AIO.Handle(player, "StellarTarot", "Prime", Catalogue(Locale(player)), Binder(player), Layout(player),
+               Ouvert(player))
 end
 
 -- LE NIVEAU QUI OUVRE LE TAROT (StellarTarot.UnlockLevel, 5 par defaut). La commande `.tarot open` dit
@@ -279,6 +283,16 @@ local function Unlocked(player)
                               player:GetAccountId()))
     return q ~= nil and q:GetUInt32(0) == 1
 end
+
+Ouvert = function(player) return Unlocked(player) end
+
+-- LE TAROT S'OUVRE EN JEU : le personnage atteint le niveau -- l'onglet et le bouton apparaissent
+-- (le client ne les montre pas avant, demande du 2026-10-18).
+RegisterPlayerEvent(13, function(_, player)          -- PLAYER_EVENT_ON_LEVEL_CHANGE
+    if Unlocked(player) then
+        AIO.Handle(player, "StellarTarot", "Unlock")
+    end
+end)
 
 function Handlers.Open(player)
     player:RunCommand("tarot open")

@@ -3033,8 +3033,16 @@ local function Take(catalogue, binder, layout)
 end
 
 -- At login: everything, and no window. The aura's tooltip reads it.
-function Handlers.Prime(_, catalogue, binder, layout)
+function Handlers.Prime(_, catalogue, binder, layout, ouvert)
     Take(catalogue, binder, layout)
+    -- LE TAROT N'EST PAS ACCESSIBLE AVANT SON NIVEAU (demande du 2026-10-18 : « l'onglet ou l'addon ne
+    -- doivent pas etre accessibles avant le niveau defini dans le .conf ») : le serveur dit s'il l'est.
+    if ouvert and S.OuvrirLeTarot then S.OuvrirLeTarot() end
+end
+
+-- Le personnage vient d'atteindre le niveau qui ouvre le tarot.
+function Handlers.Unlock()
+    if S.OuvrirLeTarot then S.OuvrirLeTarot() end
 end
 
 function Handlers.Show(_, catalogue, binder, layout)
@@ -4043,6 +4051,10 @@ STELLAR_TAROT_ALREADY_KNOWN = L.already_known
 -- ---------------------------------------------------------------------------
 
 local function Toggle()
+    if not S.ouvert then
+        AIO.Handle("StellarTarot", "Open")     -- le serveur dit le niveau qu'il faut
+        return
+    end
     if S.fui then
         Progression.Basculer(TAB_KEY)
     elseif S.ui and S.ui.frame:IsShown() then
@@ -4968,7 +4980,8 @@ local FUI_DECOUPES = {
     ["_128-redbutton-center-pressed"] = { "interface\\ForeverUI\\buttons\\_128-redbutton-center-pressed-c60", 0.015625, 0.515625, 0, 1, 64, 128, true, false },
     ["common-insideframe"] = { "interface\\ForeverUI\\common\\commoninsideframec60", 0.007812, 0.84375, 0.007812, 0.84375, 107, 107, false, false, { 53, 53, 53, 53, 0 } },
 }
-if Progression and Progression.Ajouter and Progression.Kit then
+local function AjouterOnglet()
+    if not (Progression and Progression.Ajouter and Progression.Kit) then return end
     Progression.Kit.AjouterArt(nil, FUI_DECOUPES)
     S.fui = Progression.Ajouter({
         -- la carte The Starfall, que l'aura du tarot (88002) porte aussi : les deux icones sont les memes
@@ -5027,10 +5040,14 @@ local function MinimapButton()
     b:Show()
 end
 
-if S.fui then
-    if _G["StellarTarotMiniButton"] then _G["StellarTarotMiniButton"]:Hide() end
-else
-    MinimapButton()
+-- L'ONGLET OU LE BOUTON, une fois le tarot ouvert au personnage : jamais avant. Un rechargement du code
+-- (.reload ale) cache le bouton deja pose ; la reponse du serveur le remontre s'il le faut.
+if _G["StellarTarotMiniButton"] then _G["StellarTarotMiniButton"]:Hide() end
+S.OuvrirLeTarot = function()
+    if S.ouvert then return end
+    S.ouvert = true
+    AjouterOnglet()
+    if not S.fui then MinimapButton() end
 end
 
 -- ---------------------------------------------------------------------------
