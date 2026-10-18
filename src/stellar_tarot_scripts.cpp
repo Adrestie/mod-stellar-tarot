@@ -54,6 +54,7 @@ public:
     void OnBeforeWorldInitialized() override
     {
         sStellarTarotMgr->Load();
+        StellarTarotEffects::InitStatPercents();
 
         // Cards and boards drop through DynamicLoot: without it, the module works and none of them drops.
         for (std::string_view const module : Acore::Module::GetEnableModulesList())

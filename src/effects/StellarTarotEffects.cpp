@@ -34,6 +34,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "WorldSession.h"
 #include "WorldSessionMgr.h"
 #include "CellImpl.h"
@@ -565,15 +566,149 @@ bool StellarTarotEffects::ToggleHud(Player* player)
     return allume;
 }
 
+// ---------------------------------------------------------------------------
+// LES POURCENTAGES DE CARACTERISTIQUES S'ADDITIONNENT, SUR LE TOTAL (demande
+// du 2026-10-18 : « si j'ai 100 d'intel et que j'ai 4 effets +20, +2%, +3%,
+// +4%, il faut faire 120+9% »). Le coeur ne sait pas le faire : l'aura 80 ne
+// porte que sur la caracteristique de BASE (race et niveau, sans
+// l'equipement : 3 % de l'intelligence d'un niveau 2 n'y font rien), et les
+// auras 80 comme 137 se MULTIPLIENT entre elles.
+//
+// Le calcul revient donc au module, comme pour les ralentissements :
+//   - au demarrage, les effets 80 et 137 des sorts du module deviennent
+//     inertes (aura 299, sans gestionnaire) -- ils gardent leur montant, que
+//     les lignes de cartes reglent comme avant ;
+//   - le module SOMME ces montants par caracteristique (misc -1 : les cinq) et
+//     pose la somme sur deux auras porteuses (STAT_CARRIER_*), des 137 : un
+//     pourcentage du total, equipement et bonus fixes compris. Un 137 du jeu
+//     (Benediction des rois) s'y multiplie toujours, selon la regle du jeu.
+//
+// Le recompte se fait a la mise a jour du joueur, jamais dans les crochets
+// d'aura : poser ou retirer une aura pendant que le coeur parcourt les
+// siennes invaliderait son parcours. Une aura qui arrive ou s'en va marque le
+// joueur ; une seconde au plus rattrape ce que les crochets ne voient pas
+// (un cumul change, un montant reecrit).
+// ---------------------------------------------------------------------------
+namespace
+{
+    constexpr uint32 STAT_CARRIER_PHYSICAL = 88003;   // effets : Force, Agilite, Endurance
+    constexpr uint32 STAT_CARRIER_MENTAL   = 87709;   // effets : Intelligence, Esprit
+
+    // sort du module -> ses effets en % : (indice de l'effet, caracteristique ou -1)
+    std::map<uint32, std::vector<std::pair<uint8, int32>>>& StatPercents()
+    {
+        static std::map<uint32, std::vector<std::pair<uint8, int32>>> sorts;
+        return sorts;
+    }
+
+    std::set<ObjectGuid>& StatsDirty()
+    {
+        static std::set<ObjectGuid> dirty;
+        return dirty;
+    }
+
+    bool PorteUnPourcentage(uint32 spellId)
+    {
+        return StatPercents().count(spellId) != 0;
+    }
+
+    void RecompterLesPourcentages(Player* player)
+    {
+        int32 somme[MAX_STATS] = { 0, 0, 0, 0, 0 };
+        for (auto const& [id, pose] : player->GetAppliedAuras())
+        {
+            auto const it = StatPercents().find(id);
+            if (it == StatPercents().end() || !pose || pose->GetRemoveMode() != AURA_REMOVE_NONE)
+                continue;
+            Aura* const aura = pose->GetBase();
+            for (auto const& [indice, stat] : it->second)
+            {
+                if (!pose->HasEffect(indice))
+                    continue;
+                AuraEffect const* const effet = aura->GetEffect(indice);
+                int32 const montant = effet ? effet->GetAmount() : 0;
+                for (int32 s = STAT_STRENGTH; s < MAX_STATS; ++s)
+                    if (stat == s || stat == -1)
+                        somme[s] += montant;
+            }
+        }
+        struct Porteur { uint32 sort; std::vector<uint8> stats; };
+        static Porteur const porteurs[] = {
+            { STAT_CARRIER_PHYSICAL, { STAT_STRENGTH, STAT_AGILITY, STAT_STAMINA } },
+            { STAT_CARRIER_MENTAL,   { STAT_INTELLECT, STAT_SPIRIT } },
+        };
+        for (Porteur const& p : porteurs)
+        {
+            bool utile = false;
+            for (uint8 s : p.stats)
+                utile = utile || somme[s] != 0;
+            Aura* aura = player->GetAura(p.sort, player->GetGUID());
+            if (!utile)
+            {
+                if (aura)
+                    player->RemoveAurasDueToSpell(p.sort);
+                continue;
+            }
+            if (!aura && sSpellMgr->GetSpellInfo(p.sort))
+                aura = player->AddAura(p.sort, player);
+            if (!aura)
+                continue;
+            for (uint8 i = 0; i < p.stats.size(); ++i)
+                if (AuraEffect* const effet = aura->GetEffect(i))
+                    if (effet->GetAmount() != somme[p.stats[i]])
+                        effet->ChangeAmount(somme[p.stats[i]]);
+        }
+    }
+}
+
+void StellarTarotEffects::InitStatPercents()
+{
+    StatPercents().clear();
+    uint32 inertes = 0;
+    for (uint32 id = STELLAR_TAROT_CARD_ITEM_BASE; id <= uint32(STELLAR_TAROT_SPELL_LAST); ++id)
+    {
+        if (id == STAT_CARRIER_PHYSICAL || id == STAT_CARRIER_MENTAL)
+            continue;
+        SpellInfo const* const info = sSpellMgr->GetSpellInfo(id);
+        if (!info)
+            continue;
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            SpellEffectInfo const& e = info->GetEffect(SpellEffIndex(i));
+            if (e.Effect != SPELL_EFFECT_APPLY_AURA
+                || (e.ApplyAuraName != SPELL_AURA_MOD_PERCENT_STAT
+                    && e.ApplyAuraName != SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE))
+                continue;
+            StatPercents()[id].emplace_back(i, e.MiscValue);
+            // Le seul endroit ou le module reecrit un sort charge : l'effet
+            // garde son montant, il ne touche plus aux caracteristiques.
+            const_cast<SpellInfo*>(info)->_GetEffect(SpellEffIndex(i)).ApplyAuraName = SPELL_AURA_299;
+            ++inertes;
+        }
+    }
+    LOG_INFO("module", "StellarTarot: {} stat percentage effects in {} spells are summed by the module.",
+             inertes, StatPercents().size());
+}
+
+void StellarTarotEffects::MarkStats(Player* player)
+{
+    if (player)
+        StatsDirty().insert(player->GetGUID());
+}
+
 void StellarTarotEffects::OnUpdate(Player* player, uint32 diff)
 {
     if (!player || !player->IsInWorld())
         return;
+    if (!StatPercents().empty() && StatsDirty().erase(player->GetGUID()))
+        RecompterLesPourcentages(player);
     uint32& clock = Clocks()[Guid(player)];
     clock += diff;
     if (clock < 1000)
         return;
     clock = 0;
+    if (!StatPercents().empty())
+        RecompterLesPourcentages(player);
     // LE BLOC DE MESURE, une fois par seconde et pour lui seul.
     if (Huds().count(player->GetGUID()))
     {
@@ -1395,6 +1530,8 @@ void StellarTarotEffects::OnAuraApply(Unit* target, Aura* aura)
     // Le revers d'une carte qui ralentit : le total est l'affaire du module.
     if (OursSpell(aura->GetId()) && Ralentit(aura->GetSpellInfo()))
         CumulerLesRalentissements(target, nullptr);
+    if (target->IsPlayer() && PorteUnPourcentage(aura->GetId()))
+        MarkStats(target->ToPlayer());
     Unit* const caster = aura->GetCaster();
     if (caster && caster->IsPlayer())
         Each(caster->ToPlayer(), [&](StellarTarotScript& s) { s.OnAuraApplied(caster->ToPlayer(), target, aura); });
@@ -1410,6 +1547,8 @@ void StellarTarotEffects::OnAuraRemove(Unit* target, Aura const* aura)
         return;
     if (OursSpell(aura->GetId()) && Ralentit(aura->GetSpellInfo()))
         CumulerLesRalentissements(target, aura);
+    if (target->IsPlayer() && PorteUnPourcentage(aura->GetId()))
+        MarkStats(target->ToPlayer());
     // CE QUE LE PORTEUR DE CARTES PERD : une aura qu'il avait sur lui, et qui
     // vient d'etre detachee. Les lignes qui la guettent sont les siennes.
     if (Player* const qui = target->ToPlayer())

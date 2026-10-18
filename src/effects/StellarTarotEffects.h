@@ -152,6 +152,12 @@ namespace StellarTarotEffects
     // the world comes here: rendered at once when the victim bears no card.
     void OnFinalDamage(Unit* attacker, Unit* victim, uint32& damage);
     void OnAuraApply(Unit* target, Aura* aura);
+    // LES POURCENTAGES DE CARACTERISTIQUES : au demarrage, les effets 80 et
+    // 137 des sorts du module deviennent inertes, et le module en pose la
+    // SOMME sur le total (voir StellarTarotEffects.cpp). MarkStats demande le
+    // recompte a la prochaine mise a jour du joueur.
+    void InitStatPercents();
+    void MarkStats(Player* player);
     // UNE AURA QUI S'EN VA : les revers qui ralentissent se recomptent sans
     // elle. Rendu au plus vite quand l'aura n'est pas du module.
     void OnAuraRemove(Unit* target, Aura const* aura);

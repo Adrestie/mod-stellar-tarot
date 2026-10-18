@@ -1128,6 +1128,8 @@ namespace
                 if (AuraEffect* const eff = aura->GetEffect(i))
                     if (eff->GetAmount() != veut[i])
                         eff->ChangeAmount(veut[i]);
+        // un pourcentage de caracteristique : la somme se recompte
+        StellarTarotEffects::MarkStats(player);
         return true;
     }
 
