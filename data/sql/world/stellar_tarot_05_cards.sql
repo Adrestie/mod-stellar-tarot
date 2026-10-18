@@ -105,7 +105,7 @@ INSERT INTO `mod_stellar_tarot_card`
 (51, 'The Vial', 1, 2, 2, 2, 3, 1, 88204, 88205, 88206, 88207, 'potion:10', 'potion_keep:10', 'elixirlong:20', 'potion:10', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_vial'),
 (52, 'The Raven', 2, 2, 2, 1, 4, 0, 88208, 88209, 88210, 88211, '', 'schoolsp:5:32:-5:2', 'proc:kill:100:0:heal_both:2:but:silence:1', 'proc:crit:10:0:aura:15:1:trigger:88826:sp:20:but:burn_s:2:15:88991:core:chance', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_raven'),
 (53, 'The Vertigo', 2, 2, 1, 2, 4, 1, 88212, 88213, 88214, 88215, 'ratingpct:-2', '', 'proc:spin:3:left:100:0:next_crit:but:disorient:3:chance:10', 'proc:spin:3:right:100:0:aura:10:1:rating:2:but:disorient:3:chance:10', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_vertigo'),
-(54, 'The Fever', 2, 1, 2, 2, 4, 1, 88216, 88217, 88218, 88219, 'fever:1:2:88990:88989:88988:88987:88217:88219:rating:5', 'ratingpct:5', 'proc:tick:5:100:0:aura:10:5:rating:2:debuff:88986', '', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_fever'),
+(54, 'The Fever', 2, 1, 2, 2, 4, 1, 88216, 88217, 88218, 88219, 'fever:1:2:88990:88989:88988:88987:88217:88219:rating:5', 'ratingpct:5', 'proc:fever:100:0:aura:10:5:rating:2:debuff:88986', '', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_fever'),
 (55, 'The Grin', 2, 1, 2, 2, 4, 1, 88220, 88221, 88222, 88223, '', '', '', '', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_grin'),
 (56, 'The River', 2, 2, 2, 1, 5, 1, 88224, 88225, 88226, 88227, 'cond:nocombat', '', '', 'cond:water', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_river'),
 (57, 'The Wind', 2, 2, 1, 2, 5, 0, 88228, 88229, 88230, 88231, '', 'proc:jump:100:0:aura:2:1', '', 'ratingpct:1', 'Lorem ipsum', 'Interface\\mod-Tarot\\Cards\\the_wind'),
