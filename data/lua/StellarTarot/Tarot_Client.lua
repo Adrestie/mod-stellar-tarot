@@ -2260,7 +2260,9 @@ local function BuildBoard(ui)
             cell:SetScript("OnDragStop", DragStop)
             cell:SetScript("OnEnter", function(self)
                 if self.act then
-                    HoverHand(self.act.card, self.act)
+                    -- LE SURVOL D'UNE CARTE POSEE la montre dans l'apercu, meme epingle ailleurs
+                    -- (demande du 2026-10-19) ; en partant, l'apercu revient a la carte epinglee.
+                    if not S.drag then ShowHand(self.act.card, self.act) end
                     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                     GameTooltip:SetText(Label(self.act.card), QualityColor(self.act.card.quality))
                     GameTooltip:AddLine(self.act.level > 0 and fmt(L.activation, self.act.level) or L.inert, 1, 1, 1)
@@ -2272,7 +2274,10 @@ local function BuildBoard(ui)
                     GameTooltip:Show()
                 end
             end)
-            cell:SetScript("OnLeave", function() GameTooltip:Hide() end)
+            cell:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+                if S.pinned and not S.drag then ShowHand(S.pinned, ActOf(S.pinned)) end
+            end)
             cell:Hide()
             ui.cells[#ui.cells + 1] = cell
         end
