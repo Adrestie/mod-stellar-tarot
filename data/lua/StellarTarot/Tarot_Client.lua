@@ -93,6 +93,17 @@ local L = {
                         "Карты с этим числом на левом краю.") },
 
     all           = T("All", "Toutes", "Alle", "Todas", "Все"),
+    own_titles    = { T("All cards", "Toutes les cartes", "Alle Karten", "Todas las cartas", "Все карты"),
+                      T("Owned", "Obtenues", "Erhalten", "Obtenidas", "Получены"),
+                      T("Missing", "Manquantes", "Fehlend", "Faltantes", "Нет") },
+    own_lines     = { T("Show every card.", "Afficher toutes les cartes.", "Alle Karten zeigen.",
+                        "Mostrar todas las cartas.", "Показать все карты."),
+                      T("Show only the cards you own.", "N'afficher que les cartes obtenues.",
+                        "Nur erhaltene Karten zeigen.", "Mostrar solo las cartas obtenidas.",
+                        "Показать только полученные карты."),
+                      T("Show only the cards you still lack.", "N'afficher que les cartes manquantes.",
+                        "Nur fehlende Karten zeigen.", "Mostrar solo las cartas que faltan.",
+                        "Показать только недостающие карты.") },
     unknown       = T("Unknown card", "Carte inconnue", "Unbekannte Karte", "Carta desconocida", "Неизвестная карта"),
     cumulative    = T("Cumulative", "Cumulatif", "Kumulativ", "Acumulativa", "Накопительная"),
     spell_unknown = T("spell #%d", "sort n°%d", "Zauber Nr. %d", "hechizo n.º %d", "заклинание №%d"),
@@ -130,9 +141,11 @@ local L = {
     yes           = T("Remove", "Retirer", "Entfernen", "Retirar", "Убрать"),
     cancel        = T("Cancel", "Annuler", "Abbrechen", "Cancelar", "Отмена"),
     cell_empty    = T("Empty cell", "Case vide", "Leeres Feld", "Casilla vacía", "Пустая клетка"),
-    cell_hint     = T("Right-click: take the card off", "Clic droit : retirer la carte",
-                      "Rechtsklick: Karte entfernen", "Clic derecho: retirar la carta",
-                      "Правый щелчок: убрать карту"),
+    cell_hint     = T("Left-click: show in the preview\nRight-click: take the card off",
+                      "Clic gauche : afficher dans l'aperçu\nClic droit : retirer la carte",
+                      "Linksklick: in der Vorschau zeigen\nRechtsklick: Karte entfernen",
+                      "Clic izquierdo: mostrar en la vista previa\nClic derecho: retirar la carta",
+                      "Левый щелчок: показать в просмотре\nПравый щелчок: убрать карту"),
     activation    = T("Activation: %d / 4", "Activation : %d / 4", "Aktivierung: %d / 4", "Activación: %d / 4",
                       "Активация: %d / 4"),
     inert         = T("Inert: no edge matches.", "Inerte : aucun bord ne se raccorde.",
@@ -1960,6 +1973,38 @@ local function BuildDeck(ui)
     tabs:SetPoint("TOPLEFT", 10, -40)
     tabs:SetSize(TAB_WIDTH, HEIGHT - 120)
 
+    -- OBTENUES OU MANQUANTES (demande du 2026-10-19) : trois boutons au pied de la colonne des
+    -- onglets -- toutes, les cartes obtenues seules, les manquantes seules. Combine avec le reste.
+    S.ownFilter = S.ownFilter or 1
+    ui.ownButtons = {}
+    for i = 3, 1, -1 do
+        local b = CreateFrame("Button", nil, tabs)
+        b:SetSize(TAB_WIDTH, TAB_HEIGHT)
+        b:SetPoint("BOTTOMLEFT", 0, (3 - i) * (TAB_HEIGHT + 4))
+        b:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+                        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12,
+                        insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+        b.label = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        b.label:SetPoint("CENTER")
+        b.label:SetText(i == 1 and L.all or L.own_titles[i])
+        b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+        b.mode = i
+        b:SetScript("OnClick", function(self)
+            if S.ownFilter ~= self.mode then
+                S.ownFilter = self.mode
+                if RefreshDeck then RefreshDeck() end
+            end
+        end)
+        b:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(L.own_titles[self.mode])
+            GameTooltip:AddLine(L.own_lines[self.mode], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        ui.ownButtons[i] = b
+    end
+
     -- The search: an edit box above the grid; the grid only shows the cards
     -- whose name contains what is typed (accents and case ignored).
     local search = CreateFrame("EditBox", "StellarTarotDeckSearch", panel, "InputBoxTemplate")
@@ -2199,9 +2244,16 @@ local function BuildBoard(ui)
             cell.badge = cell:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             cell.badge:SetPoint("TOPLEFT", 4, -3)
             cell:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-            cell:RegisterForClicks("RightButtonUp")
-            cell:SetScript("OnClick", function(self)
-                if self.act then AIO.Handle("StellarTarot", "Remove", self.row, self.col) end
+            cell:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            cell:SetScript("OnClick", function(self, button)
+                if not self.act then return end
+                if button == "RightButton" then
+                    AIO.Handle("StellarTarot", "Remove", self.row, self.col)
+                elseif S.TogglePin then
+                    -- CLIC GAUCHE : la carte posee dans l'apercu (demande du 2026-10-19), epinglee
+                    -- comme un clic dans le deck ; un second clic la relache.
+                    S.TogglePin(self.act.card)
+                end
             end)
             cell:RegisterForDrag("LeftButton")
             cell:SetScript("OnDragStart", DragStartCell)
@@ -2520,6 +2572,8 @@ local ALL = 0
 -- eighties -- and a card still unknown answers too, its number being all it
 -- shows. Anything else is read as a name, as before.
 local function Matches(card)
+    if S.ownFilter == 2 and not S.known[card.id] then return false end
+    if S.ownFilter == 3 and S.known[card.id] then return false end
     -- THE EDGES ASKED FOR: a known card carrying each of them at its place.
     -- A card not yet known keeps its numbers hidden, so it never answers.
     local edges = S.edgeFilter
@@ -2578,6 +2632,17 @@ local function LayoutTabs()
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT", 0, -(i - 1) * (TAB_HEIGHT + 4))
         b:Show()
+    end
+    for i, b in ipairs(ui.ownButtons or {}) do
+        if i == (S.ownFilter or 1) then
+            b:SetBackdropColor(0.25, 0.2, 0.05, 1)
+            b:SetBackdropBorderColor(1, 0.82, 0)
+            b.label:SetTextColor(1, 0.82, 0)
+        else
+            b:SetBackdropColor(0, 0, 0, 0.8)
+            b:SetBackdropBorderColor(0.5, 0.5, 0.5)
+            b.label:SetTextColor(0.8, 0.8, 0.8)
+        end
     end
 end
 
@@ -2729,6 +2794,7 @@ TogglePin = function(card)
     ShowHand(card, ActOf(card))
     RefreshDeck()
 end
+S.TogglePin = TogglePin
 
 -- ---------------------------------------------------------------------------
 -- Drawing the board
